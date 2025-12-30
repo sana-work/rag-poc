@@ -1,12 +1,23 @@
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
+.venv/
+
+# Environment and Secrets
 .env
-.venv
-node_modules/
-dist/
-.DS_Store
+
+# Data and Artifacts (Local only)
 data/interim/
 data/artifacts/
 logs/
+
+# IDE and OS
+.DS_Store
+.vscode/
+.idea/
+
+# UI Cache
 .angular/
+node_modules/
+dist/

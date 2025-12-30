@@ -1,135 +1,89 @@
-# Phase-1 Informational RAG PoC
+# Informational RAG PoC (Python + Vanilla JS)
 
-A complete, enterprise-friendly RAG (Retrieval Augmented Generation) system with an Angular frontend and FastAPI backend.
+A simplified, enterprise-ready RAG (Retrieval Augmented Generation) system. This version uses a lightweight Vanilla JS frontend served directly by a FastAPI backend, removing the need for Node.js or Angular dependencies at runtime.
 
-## Features
+## Project Structure
 
-- **Angular 16+ Chat UI**: Real-time streaming responses, citations display.
-- **FastAPI Backend**: 
-  - **Modes**: `vertex` (Cloud LLM) and `none` (No-LLM fallback).
-  - **Retrieval**: Auto-fallback strategy (FAISS -> TF-IDF -> Brute Force).
-  - **Streaming**: Server-Sent Events (SSE) for low latency.
-  - **Logging**: Structured JSON logs with PII redaction.
-- **Ingestion**: Scripts to parse PDF, DOCX, and HTML.
+```text
+rag-poc/
+├── app/                  # Application source code
+│   ├── api/              # API endpoints (Streaming, Health)
+│   ├── embeddings/       # Vertex AI Embedding logic
+│   ├── llm/              # Vertex AI Generation & R2D2/Helix Auth
+│   ├── retrieval/        # FAISS & TF-IDF search logic
+│   ├── config.py         # App configuration & Env loading
+│   └── main.py           # FastAPI entry point & UI Server
+├── scripts/              # Utility scripts
+│   ├── ingest_docs.py    # Document parsing (PDF/HTML/DOCX)
+│   └── build_index.py    # Vector index creation
+├── ui/                   # Frontend UI (Vanilla JS/HTML/CSS)
+│   └── index.html        # Main Chat Interface
+├── data/                 # Local data storage (Git ignored)
+│   ├── source/           # Drop your PDFs/HTML here
+│   ├── interim/          # Extracted text
+│   └── artifacts/        # Search indices
+├── .env                  # Your local secrets (R2D2, GCP Project)
+├── requirements.txt      # Python dependencies
+├── ARCHITECTURE.md       # Technical design overview
+└── README.md             # This file
+```
 
 ---
 
 ## Prerequisites
 
-- **Python 3.10+** (Recommended), or Python 3.9 with `importlib-metadata`
-- **Node.js 16+** (includes **NPM**) - [Download here](https://nodejs.org/)
+- **Python 3.10+** (Recommended) or 3.9
 - **Helix & R2D2 Access**:
-    - `helix` CLI installed and configured.
-    - An active session with `helix auth login`.
-    - `SSL_CERT_FILE` pointing to your corporate CA bundle (if required).
-    - Access to the target Vertex project via R2D2.
+    - `helix` CLI installed and authenticated.
+    - Active session via `helix auth login`.
+    - Access to a Vertex AI project via R2D2.
 
 ---
 
-## Setup Instructions (Windows Friendly)
+## Setup & Running
 
-### 1. Backend Setup
+### 1. Environment Setup
+```bash
+# Create and activate virtual environment
+python -m venv .venv
+source .venv/bin/activate  # macOS/Linux
+# .\.venv\Scripts\activate  # Windows
 
-Open a terminal (PowerShell or Command Prompt) in the `rag-poc/backend` directory.
+# Install dependencies
+pip install -r requirements.txt
+```
 
-1.  **Create Virtual Environment**:
-    ```powershell
-    python -m venv .venv
-    .\.venv\Scripts\activate
-    ```
+### 2. Configuration
+Copy `.env.example` to `.env` and fill in:
+- `R2D2_VERTEX_BASE_URL`
+- `R2D2_SOEID`
+- `GOOGLE_CLOUD_PROJECT`
+- `SSL_CERT_FILE` (if on corporate network)
 
-2.  **Install Dependencies**:
-    ```powershell
-    pip install -r requirements.txt
-    ```
+### 3. Prepare Data
+```bash
+# 1. Place your raw files in data/source/
+# 2. Ingest documents (converts to text)
+python scripts/ingest_docs.py --input "data/source"
 
-3.  **Environment Configuration**:
-    - Copy `.env.example` to `.env`.
-    - **R2D2 Config**: Set `R2D2_VERTEX_BASE_URL` and `R2D2_SOEID`.
-    - **Enterprise TLS**: Set `SSL_CERT_FILE` path in `.env`.
-    - **Helix**: Ensure `HELIX_TOKEN_CMD` is correct for your OS.
-    - **Project**: Set `GOOGLE_CLOUD_PROJECT` and `GOOGLE_CLOUD_LOCATION`.
-    ```powershell
-    copy .env.example .env
-    ```
+# 3. Build the search index
+python scripts/build_index.py
+```
 
-5.  **Ingest Documents (Demo Data)**:
-    - Create a sample HTML/PDF/DOCX file in a folder (e.g., `data/source`).
-    - For example, create `data/source/gemini.html` with some content.
-    - Run ingestion:
-    ```powershell
-    python scripts/ingest_docs.py --input "data/source"
-    ```
-
-6.  **Build Index**:
-    ```powershell
-    python scripts/build_index.py
-    ```
-
-6.  **Run Server**:
-    ```powershell
-    uvicorn app.main:app --reload
-    ```
-    The backend runs at `http://localhost:8000`.
-
-### 2. Frontend Setup
-
-Open a new terminal in the `rag-poc/frontend` directory.
-
-1.  **Install Dependencies**:
-    ```powershell
-    npm install
-    ```
-
-2.  **Run Application**:
-    ```powershell
-    ng serve
-    ```
-    The frontend runs at `http://localhost:4200`.
+### 4. Run the Application
+```bash
+python -m uvicorn app.main:app --reload
+```
+Open your browser at: **[http://localhost:8000/](http://localhost:8000/)**
 
 ---
 
-## Usage Scenarios
-
-### Mode 1: Cloud LLM (Vertex AI)
-
-- Ensure `MODE=vertex` in `.env`.
-- Ensure you have run `gcloud auth application-default login`.
-- Start both servers.
-- Ask questions in the UI.
-
-### Mode 2: No-LLM Fallback (Strictly Restricted Env)
-
-- Set `MODE=none` in `.env`.
-- Restart Backend.
-- The system will return the best matching text chunks directly.
-
-### Search Fallbacks
-
-You can control retrieval strategy via `.env`:
-- `RETRIEVAL_MODE=faiss` (Requires `faiss-cpu` and `sentence-transformers`)
-- `RETRIEVAL_MODE=tfidf` (Requires `scikit-learn`)
-- `RETRIEVAL_MODE=brute` (Works with standard Python only)
-
-If a library is missing, the system automatically falls back to the next available method.
-
----
+## Key Features
+- **Streaming UI**: Real-time response generation via SSE.
+- **Citations**: Automatic document sourcing and relevance scores.
+- **Search Fallbacks**: Automatically uses FAISS (if Vertex is available) or falls back to TF-IDF.
 
 ## Troubleshooting
-
-- **FAISS Import Error**: Using Windows? Ensure you installed `faiss-cpu`. If problems persist, set `RETRIEVAL_MODE=tfidf` in `.env`.
-- **Authentication Error (401/403)**:
-    - The app automatically tries to refresh the token.
-    - If it persists, run `helix auth login` in your terminal manually.
-    - Check if `HELIX_TOKEN_CMD` in `.env` works by running it in your shell.
-- **SSL / Certificate Verify Failed**:
-    - Ensure `SSL_CERT_FILE` in `.env` points to the correct `.pem` file.
-    - Ensure the path has no trailing spaces.
-- **'npm' is not recognized**:
-    - This means Node.js is not installed or not in your system's PATH.
-    - Download and install Node.js from [nodejs.org](https://nodejs.org/).
-    - Restart your terminal/IDE after installation.
-- **ModuleNotFoundError: google.generativeai**: Ensure you installed `google-generativeai` (not `google-genai`).
-- **ImportError: importlib.metadata**: If using Python < 3.10, install `importlib-metadata`.
-- **Frontend Connection Error**: Ensure backend is running on port 8000 and CORS is enabled (default is allow all).
-
+- **401/403 Error**: Run `helix auth login` to refresh your session.
+- **SSL Error**: Ensure `SSL_CERT_FILE` points to  `.pem` bundle in `.env`.
+- **Dimension Mismatch**: Re-run `python scripts/build_index.py` if you change embedding models.

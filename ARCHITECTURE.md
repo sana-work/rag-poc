@@ -1,111 +1,51 @@
-# System Architecture & Flow Documentation
+# RAG PoC Architecture
 
-This document provides a detailed overview of how the RAG (Retrieval Augmented Generation) PoC application works, including the flow of data and the responsibility of each file.
+This document outlines the design and flow of the high-performance Informational RAG system.
 
-## 1. High-Level Overview
+## 1. High-Level Architecture
 
-The application is a **Retrieval Augmented Generation** system. It allows users to query a document knowledge base. The system retrieves relevant text chunks from uploaded documents and uses Google's Gemini LLM to generate an answer based *only* on those chunks.
+The system is designed as a **decoupled retrieval and generation pipeline** that prioritizes enterprise security (via R2D2/Helix) and low latency (via SSE streaming).
 
-**Tech Stack:**
-- **Frontend**: Angular 16+ (UI, Chat Interface, SSE Stream handling)
-- **Backend**: FastAPI (Python API, Retrieval Logic, LLM Integration)
-- **Database/Storage**: Local file system (FAISS index, TF-IDF pickle, text chunks)
-- **AI Model**: Google Vertex AI Gemini (via `google-genai` with R2D2/Helix)
+```mermaid
+graph TD
+    Client["Browser (Vanilla JS)"] -- "GET /api/chat/stream?q=..." --> API["FastAPI Server"]
+    API -- "Embed Query" --> Embedder["Vertex AI Embedder (via R2D2)"]
+    API -- "Search" --> Retriever["FAISS / TF-IDF"]
+    Retriever -- "Load Context" --> Files["Local Data Files"]
+    API -- "Prompt + Context" --> LLM["Vertex AI Gemini (via R2D2)"]
+    LLM -- "Streaming SSE" --> Client
+```
 
----
+## 2. Component Design
 
-## 2. Request/Response Flow
+### Frontend (UI/Vanilla JS)
+- **Standalone**: A single `index.html` file using native Browser APIs (`EventSource`, `fetch`).
+- **Low Overhead**: Zero build step, zero Node.js requirement.
+- **Streaming Response**: Listens for `token` events from the backend to display text immediately.
 
-Here is the step-by-step journey of a user's question:
+### Backend (FastAPI)
+- **Shared R2D2 Client**: A singleton factory that manages Helix authentication tokens, automatically refreshing them every 45 minutes or on 401 errors.
+- **Adaptive Embedding**: The `VertexEmbedder` uses `text-embedding-005` with batching logic. If a batch fails, it automatically falls back to sequential embedding requests.
+- **Pluggable Retrieval**: 
+  - **FAISS**: Primary vector search for high-speed similarity.
+  - **TF-IDF**: Local fallback if vector search is unavailable or un-indexed.
 
-### 1. User Input (Frontend)
-- **User** types a question in the chat bar (e.g., *"What is Gemini?"*) and hits Enter.
-- **`app.component.ts`** captures the input and calls `ChatService.sendMessageStream()`.
+## 3. Data Flow
 
-### 2. API Request (Frontend -> Backend)
-- **`chat.service.ts`** opens a **Server-Sent Events (SSE)** connection to the backend endpoint:  
-  `GET /api/chat/stream?q=What%20is%20Gemini&sessionId=...`
-- It listens for three types of events: `meta` (citations), `token` (streaming text), and `done`.
+1. **Ingestion**: `ingest_docs.py` parses raw documents and stores extraction in `data/interim/`.
+2. **Indexing**: `build_index.py` fetches Vertex embeddings for all chunks and builds a local FAISS index.
+3. **Querying**: 
+   - User question is embedded via Vertex.
+   - FAISS identifies the top $K$ most relevant text blocks.
+   - A system prompt is constructed containing only those blocks.
+   - Vertex AI streams the answer back through the SSE connection.
 
-### 3. Request Handling (Backend `routes.py`)
-- **FastAPI** routes the request to `chat_stream` in `backend/app/api/routes.py`.
-- **Redaction**: First, the query is redacted (PII removal) using `Redactor`.
-
-### 4. Retrieval Phase (`retrieval/`)
-- The backend calls `get_retriever().retrieve(query)`.
-- **`TfidfRetriever`** (or FAISS) vectorizes the query.
-- It calculates **Cosine Similarity** between the query and all stored text chunks (from `chunks.jsonl`).
-- The top K (default 3) most similar chunks are returned.
-
-### 5. Prompt Construction
-- `routes.py` formats a prompt for the LLM. It combines:
-    - System Instructions ("You are a helpful assistant...")
-    - The Retrieved Text Chunks ("Context: ...")
-    - The User's Question
-- This prompts the LLM to answer *only* using the provided context.
-
-### 6. LLM Generation (`llm/vertex_stream.py`)
-- The prompt is sent to **Google Gemini** via the `google-generativeai` SDK.
-- The `stream=True` parameter is used to get a generator that yields text tokens as they are created.
-
-### 7. Streaming Response (Backend -> Frontend)
-- As `vertex_stream.py` yields tokens, `routes.py` packages them into SSE events.
-- **Event Sequence**:
-    1.  `event: meta`: Sends the JSON list of citations (Chunks used) immediately.
-    2.  `event: token`: Sends pieces of the answer text (e.g., "Gemini", " is", " a", " model").
-    3.  `event: done`: Sends final latency stats and closes connection.
-
-### 8. Rendering (Frontend)
-- **`chat.service.ts`** receives these events.
-- **`app.component.ts`** updates the `messages` array in real-time.
-- The user sees the answer typing out and the citations appearing below the message.
+## 4. Security & Authentication
+- **Helix**: Used to obtain ephemeral access tokens from the local machine.
+- **R2D2**: All Google Cloud traffic (Vertex AI) is routed through enterprise R2D2 gateways.
+- **PII Protection**: Structured logging with redaction identifies and masks sensitive patterns.
+```
 
 ---
 
-## 3. File Roles & Responsibilities
-
-### Backend (`/backend`)
-
-| File / Directory | Role |
-| :--- | :--- |
-| **`app/main.py`** | Entry point. Configures FastAPI, CORS, and mounts the API router. |
-| **`app/config.py`** | Application settings. Loads env vars (R2D2 URLs, SOEIDs, Helix commands). |
-| **`app/api/routes.py`** | Defines API endpoints (`/chat/stream`). Orchestrates Retrieval -> LLM -> Streaming response. |
-| **`app/llm/vertex_r2d2_client.py`** | **NEW**. Factory for R2D2-compliant clients. Handles Helix token auth & refresh. |
-| **`app/llm/vertex_stream.py`** | Streaming generation logic using the R2D2 client. |
-| **`app/embeddings/vertex_embedder.py`** | **NEW**. Generates embeddings via R2D2 (text-embedding-005) with batching. |
-| **`app/retrieval/`** | Contains retrieval logic. `factory.py` loads `FaissVertexRetriever`. |
-| **`app/utils/text_chunker.py`** | Splits large documents into smaller overlapping text chunks for indexing. |
-| **`scripts/ingest_docs.py`** | **Offline Script**. Parses PDF/DOCX/HTML files from `data/source` and saves plain text to `data/interim`. |
-| **`scripts/build_index.py`** | **Offline Script**. Reads processed text, chunks it, and builds the Search Index (FAISS/TF-IDF). |
-| **`requirements.txt`** | Python dependencies list. |
-
-### Frontend (`/frontend`)
-
-| File / Directory | Role |
-| :--- | :--- |
-| **`src/app/chat.service.ts`** | Handles HTTP communication. Uses `EventSource` to listen to the backend stream. |
-| **`src/app/app.component.ts`** | Main component logic. Manages message history, user input, and UI state. |
-| **`src/app/app.component.html`** | The Chat Interface template. Displays the message list and input box. |
-| **`src/environments/environment.ts`** | Configures the API URL (`http://localhost:8000/api`). |
-
-### Configuration
-
-| File | Role |
-| :--- | :--- |
-| **`.env`** | Secrets and Config. Stores API Keys, Project ID, and switching modes (Vertex vs None). |
-
----
-
-## 4. Workflows
-
-### Adding New Knowledge
-1.  Add file to `backend/data/source` (create folder if needed).
-2.  Run `python scripts/ingest_docs.py --input data/source` (Converts to text).
-3.  Run `python scripts/build_index.py` (Updates the search engine).
-4.  Restart Backend (to load new index from disk).
-
-### Switching to "Offline" Mode
-1.  Set `MODE=none` in `.env`.
-2.  Restart Backend.
-3.  The app will now only return chunks (Search results) without generating an AI answer.
+*Note: For setup instructions, please refer to [README.md](README.md).*

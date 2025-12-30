@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GenAI RAG - Vanilla Interface</title>
+    <style>
+        :root {
+            --bg-color: #f8fafc;
+            --chat-bg: #ffffff;
+            --primary: #2563eb;
+            --user-msg: #f1f5f9;
+            --ai-msg: #ffffff;
+            --text: #1e293b;
+            --border: #e2e8f0;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        header {
+            padding: 1rem 2rem;
+            background: white;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        h1 {
+            font-size: 1.25rem;
+            margin: 0;
+            color: var(--primary);
+        }
+
+        #chat-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .message {
+            max-width: 80%;
+            padding: 1rem;
+            border-radius: 0.75rem;
+            line-height: 1.5;
+            position: relative;
+        }
+
+        .user {
+            align-self: flex-end;
+            background: var(--user-msg);
+            color: var(--text);
+            border-bottom-right-radius: 0;
+        }
+
+        .assistant {
+            align-self: flex-start;
+            background: var(--ai-msg);
+            border: 1px solid var(--border);
+            border-bottom-left-radius: 0;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+
+        .citations {
+            margin-top: 0.75rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid var(--border);
+            font-size: 0.85rem;
+            color: #64748b;
+        }
+
+        .citation-tag {
+            background: #f1f5f9;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-right: 5px;
+            cursor: pointer;
+        }
+
+        #input-container {
+            padding: 1.5rem 2rem;
+            background: white;
+            border-top: 1px solid var(--border);
+            display: flex;
+            gap: 1rem;
+        }
+
+        input {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            outline: none;
+            font-size: 1rem;
+        }
+
+        input:focus {
+            border-color: var(--primary);
+        }
+
+        button {
+            padding: 0.75rem 1.5rem;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .typing {
+            font-style: italic;
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>GenAI RAG POC <small style="color: grey; font-weight: normal;">(Vanilla JS)</small></h1>
+        <div id="status" class="typing" style="display:none">AI is thinking...</div>
+    </header>
+
+    <div id="chat-container">
+        <div class="message assistant">
+            Hello! I am your AI assistant. Ask me anything about the loaded documents.
+        </div>
+    </div>
+
+    <form id="input-container">
+        <input type="text" id="user-input" placeholder="Type your question here..." autocomplete="off">
+        <button type="submit" id="send-btn">Send</button>
+    </form>
+
+    <script>
+        const chatContainer = document.getElementById('chat-container');
+        const inputForm = document.getElementById('input-container');
+        const userInput = document.getElementById('user-input');
+        const sendBtn = document.getElementById('send-btn');
+        const status = document.getElementById('status');
+
+        let sessionId = Math.random().toString(36).substring(7);
+
+        function addMessage(content, role) {
+            const div = document.createElement('div');
+            div.className = `message ${role}`;
+            div.textContent = content;
+            chatContainer.appendChild(div);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+            return div;
+        }
+
+        inputForm.onsubmit = (e) => {
+            e.preventDefault();
+            const query = userInput.value.trim();
+            if (!query) return;
+
+            // Add user message
+            addMessage(query, 'user');
+            userInput.value = '';
+
+            // Create placeholder for assistant response
+            const responseDiv = addMessage('', 'assistant');
+            status.style.display = 'block';
+            sendBtn.disabled = true;
+
+            // SSE Connection
+            // Note: In production, we assume API is at relative /api/chat/stream
+            const url = `/api/chat/stream?q=${encodeURIComponent(query)}&sessionId=${sessionId}`;
+            const eventSource = new EventSource(url);
+
+            eventSource.addEventListener('token', (e) => {
+                const token = JSON.parse(e.data);
+                responseDiv.textContent += token;
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            });
+
+            eventSource.addEventListener('meta', (e) => {
+                const meta = JSON.parse(e.data);
+                if (meta.citations && meta.citations.length > 0) {
+                    const citeContainer = document.createElement('div');
+                    citeContainer.className = 'citations';
+                    citeContainer.innerHTML = '<strong>Sources:</strong> ';
+                    meta.citations.forEach(c => {
+                        citeContainer.innerHTML += `<span class="citation-tag" title="Score: ${c.score.toFixed(2)}">${c.title}</span>`;
+                    });
+                    responseDiv.appendChild(citeContainer);
+                }
+            });
+
+            eventSource.addEventListener('done', () => {
+                eventSource.close();
+                status.style.display = 'none';
+                sendBtn.disabled = false;
+            });
+
+            eventSource.onerror = (err) => {
+                console.error("SSE Error:", err);
+                responseDiv.textContent += "\n[Error connecting to server]";
+                eventSource.close();
+                status.style.display = 'none';
+                sendBtn.disabled = false;
+            };
+        };
+    </script>
+</body>
+
+</html>
