@@ -3,7 +3,7 @@ import json
 import time
 from app.config import settings
 from app.llm.vertex_r2d2_client import VertexR2D2Client
-from google.genai.types import GenerateContentConfig
+from google.genai import types
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +36,7 @@ async def generate_response_stream(query: str, context_chunks: list, session_id:
         client = VertexR2D2Client.get_client()
         
         # Configure generation config
-        config = GenerateContentConfig(
+        config = types.GenerateContentConfig(
             temperature=0.7,
             max_output_tokens=1024,
             system_instruction=system_instruction

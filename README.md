@@ -17,7 +17,7 @@ A complete, enterprise-friendly RAG (Retrieval Augmented Generation) system with
 ## Prerequisites
 
 - **Python 3.10+** (Recommended), or Python 3.9 with `importlib-metadata`
-- **Node.js 16+** & **NPM**
+- **Node.js 16+** (includes **NPM**) - [Download here](https://nodejs.org/)
 - **Helix & R2D2 Access**:
     - `helix` CLI installed and configured.
     - An active session with `helix auth login`.
@@ -125,9 +125,10 @@ If a library is missing, the system automatically falls back to the next availab
 - **SSL / Certificate Verify Failed**:
     - Ensure `SSL_CERT_FILE` in `.env` points to the correct `.pem` file.
     - Ensure the path has no trailing spaces.
-- **Embedding Errors**:
-    - Check if `text-embedding-005` is enabled in your Vertex project.
-    - If rate limited, the app will retry automatically.
+- **'npm' is not recognized**:
+    - This means Node.js is not installed or not in your system's PATH.
+    - Download and install Node.js from [nodejs.org](https://nodejs.org/).
+    - Restart your terminal/IDE after installation.
 - **ModuleNotFoundError: google.generativeai**: Ensure you installed `google-generativeai` (not `google-genai`).
 - **ImportError: importlib.metadata**: If using Python < 3.10, install `importlib-metadata`.
 - **Frontend Connection Error**: Ensure backend is running on port 8000 and CORS is enabled (default is allow all).
