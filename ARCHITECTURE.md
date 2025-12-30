@@ -10,7 +10,7 @@ The application is a **Retrieval Augmented Generation** system. It allows users 
 - **Frontend**: Angular 16+ (UI, Chat Interface, SSE Stream handling)
 - **Backend**: FastAPI (Python API, Retrieval Logic, LLM Integration)
 - **Database/Storage**: Local file system (FAISS index, TF-IDF pickle, text chunks)
-- **AI Model**: Google Vertex AI Gemini (via `google-generativeai` SDK)
+- **AI Model**: Google Vertex AI Gemini (via `google-genai` with R2D2/Helix)
 
 ---
 
@@ -69,10 +69,12 @@ Here is the step-by-step journey of a user's question:
 | File / Directory | Role |
 | :--- | :--- |
 | **`app/main.py`** | Entry point. Configures FastAPI, CORS, and mounts the API router. |
-| **`app/config.py`** | Application settings. Loads env vars (`GOOGLE_API_KEY`, paths, model names). |
+| **`app/config.py`** | Application settings. Loads env vars (R2D2 URLs, SOEIDs, Helix commands). |
 | **`app/api/routes.py`** | Defines API endpoints (`/chat/stream`). Orchestrates Retrieval -> LLM -> Streaming response. |
-| **`app/llm/vertex_stream.py`** | Wrapper for Google Gemini API. Handles authentication and streaming generation. |
-| **`app/retrieval/`** | Contains retrieval logic. `factory.py` chooses between FAISS, TF-IDF, or Brute force. |
+| **`app/llm/vertex_r2d2_client.py`** | **NEW**. Factory for R2D2-compliant clients. Handles Helix token auth & refresh. |
+| **`app/llm/vertex_stream.py`** | Streaming generation logic using the R2D2 client. |
+| **`app/embeddings/vertex_embedder.py`** | **NEW**. Generates embeddings via R2D2 (text-embedding-005) with batching. |
+| **`app/retrieval/`** | Contains retrieval logic. `factory.py` loads `FaissVertexRetriever`. |
 | **`app/utils/text_chunker.py`** | Splits large documents into smaller overlapping text chunks for indexing. |
 | **`scripts/ingest_docs.py`** | **Offline Script**. Parses PDF/DOCX/HTML files from `data/source` and saves plain text to `data/interim`. |
 | **`scripts/build_index.py`** | **Offline Script**. Reads processed text, chunks it, and builds the Search Index (FAISS/TF-IDF). |

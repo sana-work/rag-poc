@@ -11,93 +11,105 @@ from typing import List, Dict
 sys.path.append(str(Path(__file__).parent.parent))
 
 from app.config import settings
-from app.utils.text_chunker import TextChunker
+# Import the new Vertex Embedder
+from app.embeddings.vertex_embedder import VertexEmbedder
+import numpy as np
+import faiss
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-def load_processed_docs(interim_dir: Path) -> List[Dict]:
-    docs = []
-    for txt_file in interim_dir.glob("*.txt"):
-        meta_file = interim_dir / f"{txt_file.stem}.meta.json"
-        
-        if meta_file.exists():
-            with open(meta_file, 'r', encoding='utf-8') as f:
-                meta = json.load(f)
-            
-            with open(txt_file, 'r', encoding='utf-8') as f:
-                text = f.read()
-                
-            docs.append({"text": text, "meta": meta})
-    return docs
+def build_index():
+    logger.info("Starting index build process...")
 
-def build_indices(input_dir: str, output_dir: str):
-    interim_path = Path(input_dir)
-    output_path = Path(output_dir)
-    output_path.mkdir(parents=True, exist_ok=True)
+    # Paths
+    artifacts_dir = settings.DATA_DIR / "artifacts"
+    interim_dir = settings.DATA_DIR / "interim"
+    chunks_file = artifacts_dir / "chunks.jsonl"
+    faiss_index_file = artifacts_dir / "faiss.index"
     
-    # 1. Chunking
-    logger.info("Chunking documents...")
+    # 1. Load Chunks
+    # Ideally, we should reload from source texts and re-chunk. 
+    # But for now, we assume chunks.jsonl is already populated by ingest_docs.py (or we read from interim).
+    # Since ingest_docs creates interim txt files, let's assume we need to generate chunks.jsonl first?
+    # Previous implementation of ingest_docs.py does NOT create chunks.jsonl, build_index.py DOES.
+    # So we need to read from data/interim/*.txt and chunk them first.
+    
+    from app.utils.text_chunker import TextChunker
     chunker = TextChunker(chunk_size=settings.CHUNK_SIZE, overlap=settings.CHUNK_OVERLAP)
-    docs = load_processed_docs(interim_path)
     
     all_chunks = []
-    for doc in docs:
-        chunks = chunker.chunk_text(doc["text"], doc["meta"])
-        all_chunks.extend(chunks)
+    
+    logger.info("Reading processed documents from interim...")
+    for txt_file in interim_dir.glob("*.txt"):
+        with open(txt_file, "r", encoding="utf-8") as f:
+            text = f.read()
+            
+        meta_file = txt_file.with_suffix(".meta.json")
+        meta = {}
+        if meta_file.exists():
+            with open(meta_file, "r") as f:
+                meta = json.load(f)
+                
+        # Chunking
+        doc_chunks = chunker.chunk_text(text, meta)
+        all_chunks.extend(doc_chunks)
         
     logger.info(f"Created {len(all_chunks)} chunks.")
     
-    # Save chunks registry
-    chunks_file = output_path / "chunks.jsonl"
-    with open(chunks_file, 'w', encoding='utf-8') as f:
+    # Save chunks.jsonl
+    with open(chunks_file, "w", encoding="utf-8") as f:
         for chunk in all_chunks:
             f.write(json.dumps(chunk) + "\n")
             
-    texts = [c["text"] for c in all_chunks]
-    ids = [c["chunkId"] for c in all_chunks]
-    
-    # 2. Build FAISS Index
-    try:
-        from sentence_transformers import SentenceTransformer
-        import faiss
-        import numpy as np
-        
-        logger.info("Building FAISS index...")
-        model = SentenceTransformer('all-MiniLM-L6-v2')
-        embeddings = model.encode(texts)
-        
-        index = faiss.IndexFlatL2(embeddings.shape[1])
-        index.add(embeddings)
-        
-        faiss.write_index(index, str(output_path / "faiss.index"))
-        logger.info("FAISS index built.")
-    except ImportError:
-        logger.warning("FAISS or sentence-transformers not found. Skipping FAISS build.")
-    except Exception as e:
-        logger.error(f"Error building FAISS index: {e}")
+    if not all_chunks:
+        logger.warning("No chunks to index.")
+        return
 
-    # 3. Build TF-IDF Index
+    # 2. Build Index using Vertex Embeddings
     try:
+        logger.info(f"Generating embeddings using {settings.VERTEX_EMBEDDING_MODEL}...")
+        embedder = VertexEmbedder()
+        
+        texts = [c['text'] for c in all_chunks]
+        embeddings = embedder.embed_texts(texts)
+        
+        # Convert to numpy and normalize for Cosine Similarity
+        embeddings_np = np.array(embeddings).astype('float32')
+        faiss.normalize_L2(embeddings_np)
+        
+        dimension = embeddings_np.shape[1]
+        logger.info(f"Embedding dimension: {dimension}")
+        
+        # Use IndexFlatIP (Inner Product) which equals Cosine Similarity on normalized vectors
+        index = faiss.IndexFlatIP(dimension)
+        index.add(embeddings_np)
+        
+        # Save FAISS index
+        faiss.write_index(index, str(faiss_index_file))
+        logger.info(f"FAISS index saved to {faiss_index_file}")
+        
+    except Exception as e:
+        logger.error(f"Failed to build FAISS index with Vertex Embeddings: {e}")
+        # We can implement a fallback or just fail. 
+        # Since requirements say "Keep FAISS retrieval if available", we should try to succeed.
+        # But if Vertex is down during build, we can't really build a vector index. 
+        # We could build TF-IDF as fallback.
+        
+        logger.info("Falling back to TF-IDF index...")
         from sklearn.feature_extraction.text import TfidfVectorizer
-        
-        logger.info("Building TF-IDF index...")
-        vectorizer = TfidfVectorizer()
-        tfidf_matrix = vectorizer.fit_transform(texts)
-        
-        with open(output_path / "tfidf.pkl", "wb") as f:
-            pickle.dump((vectorizer, tfidf_matrix), f)
-        logger.info("TF-IDF index built.")
-    except ImportError:
-        logger.warning("scikit-learn not found. Skipping TF-IDF build.")
+        try:
+            vectorizer = TfidfVectorizer()
+            tfidf_matrix = vectorizer.fit_transform(texts)
+            
+            with open(artifacts_dir / "tfidf.pkl", "wb") as f:
+                pickle.dump((vectorizer, tfidf_matrix), f)
+            logger.info("TF-IDF index built as fallback.")
+        except Exception as tfidf_e:
+            logger.error(f"TF-IDF build also failed: {tfidf_e}")
 
     logger.info("Index build complete.")
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Build Search Index")
-    parser.add_argument("--input", default="data/interim", help="Input directory processed text")
-    parser.add_argument("--output", default="data/artifacts", help="Output directory for indices")
-    args = parser.parse_args()
-    
-    build_indices(args.input, args.output)
+    build_index()

@@ -18,10 +18,11 @@ A complete, enterprise-friendly RAG (Retrieval Augmented Generation) system with
 
 - **Python 3.10+** (Recommended), or Python 3.9 with `importlib-metadata`
 - **Node.js 16+** & **NPM**
-- **Google Cloud Access**: 
-    - `gcloud` CLI installed and authenticated (`gcloud auth application-default login`).
-    - OR a **Google API Key** for Gemini.
-    - Vertex AI API enabled in your GCP project.
+- **Helix & R2D2 Access**:
+    - `helix` CLI installed and configured.
+    - An active session with `helix auth login`.
+    - `SSL_CERT_FILE` pointing to your corporate CA bundle (if required).
+    - Access to the target Vertex project via R2D2.
 
 ---
 
@@ -44,8 +45,10 @@ Open a terminal (PowerShell or Command Prompt) in the `rag-poc/backend` director
 
 3.  **Environment Configuration**:
     - Copy `.env.example` to `.env`.
-    - Edit `.env` to set your `GOOGLE_CLOUD_PROJECT`.
-    - **Crucial**: Set `GOOGLE_API_KEY` in `.env` if not using `gcloud` auth.
+    - **R2D2 Config**: Set `R2D2_VERTEX_BASE_URL` and `R2D2_SOEID`.
+    - **Enterprise TLS**: Set `SSL_CERT_FILE` path in `.env`.
+    - **Helix**: Ensure `HELIX_TOKEN_CMD` is correct for your OS.
+    - **Project**: Set `GOOGLE_CLOUD_PROJECT` and `GOOGLE_CLOUD_LOCATION`.
     ```powershell
     copy .env.example .env
     ```
@@ -115,10 +118,16 @@ If a library is missing, the system automatically falls back to the next availab
 ## Troubleshooting
 
 - **FAISS Import Error**: Using Windows? Ensure you installed `faiss-cpu`. If problems persist, set `RETRIEVAL_MODE=tfidf` in `.env`.
-- **Authentication Error ("No API_KEY or ADC found")**:
-    - Set `GOOGLE_API_KEY` in `.env`.
-    - OR run `gcloud auth application-default login`.
-    - OR switch to `MODE=none` in `.env`.
+- **Authentication Error (401/403)**:
+    - The app automatically tries to refresh the token.
+    - If it persists, run `helix auth login` in your terminal manually.
+    - Check if `HELIX_TOKEN_CMD` in `.env` works by running it in your shell.
+- **SSL / Certificate Verify Failed**:
+    - Ensure `SSL_CERT_FILE` in `.env` points to the correct `.pem` file.
+    - Ensure the path has no trailing spaces.
+- **Embedding Errors**:
+    - Check if `text-embedding-005` is enabled in your Vertex project.
+    - If rate limited, the app will retry automatically.
 - **ModuleNotFoundError: google.generativeai**: Ensure you installed `google-generativeai` (not `google-genai`).
 - **ImportError: importlib.metadata**: If using Python < 3.10, install `importlib-metadata`.
 - **Frontend Connection Error**: Ensure backend is running on port 8000 and CORS is enabled (default is allow all).

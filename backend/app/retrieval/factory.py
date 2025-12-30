@@ -11,18 +11,19 @@ logger = logging.getLogger(__name__)
 def get_retriever() -> BaseRetriever:
     mode = settings.RETRIEVAL_MODE.lower()
     
-    if mode == "faiss":
+    if settings.RETRIEVAL_MODE == "faiss":
         try:
-            return FaissRetriever()
-        except:
-            logger.warning("FAISS init failed, falling back to TF-IDF")
-            mode = "tfidf"
-            
-    if mode == "tfidf":
-        try:
-            return TfidfRetriever()
-        except:
-            logger.warning("TF-IDF init failed, falling back to Brute")
+            from app.retrieval.retriever_faiss_vertex import FaissVertexRetriever
+            # Verify files exist
+            if (settings.DATA_DIR / "artifacts" / "faiss.index").exists():
+                logger.info("Initializing FAISS Vertex Retriever")
+                return FaissVertexRetriever(
+                    index_path=settings.DATA_DIR / "artifacts" / "faiss.index",
+                    chunks_path=settings.DATA_DIR / "artifacts" / "chunks.jsonl"
+                )
+        except Exception as e:
+            logger.error(f"Failed to initialize FAISS Retriever: {e}")
+            logger.info("Falling back to TF-IDF")
             mode = "brute"
             
     return BruteRetriever()

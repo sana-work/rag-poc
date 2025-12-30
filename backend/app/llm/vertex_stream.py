@@ -1,49 +1,86 @@
-import google.generativeai as genai
-from typing import AsyncGenerator, List, Dict, Any
+import logging
+import json
+import time
 from app.config import settings
-from app.utils.logger import logger
+from app.llm.vertex_r2d2_client import VertexR2D2Client
+from google.genai.types import GenerateContentConfig
 
-# Initialize Vertex AI
-# Note: google-genai SDK 0.2+ handles ADC automatically if configured correctly.
-# If using the 'google-generativeai' (Palm API) library it might be different, 
-# but for Vertex AI we usually use 'vertexai' or 'google.generativeai' with configuration.
-# The user specified `google-genai` python SDK. 
-# Assuming standard `google.generativeai` setup for Gemini.
+logger = logging.getLogger(__name__)
 
-try:
-    if settings.GOOGLE_API_KEY:
-        genai.configure(api_key=settings.GOOGLE_API_KEY)
-    else:
-        genai.configure(transport="rest")
-except:
-    pass
+async def generate_response_stream(query: str, context_chunks: list, session_id:str):
+    """
+    Streams response from Vertex AI Gemini using R2D2 client.
+    """
+    
+    # Construct prompt
+    context_text = "\n\n".join([c.get('text', '') for c in context_chunks])
+    
+    system_instruction = (
+        "You are a helpful AI assistant. "
+        "Answer the user's question using ONLY the context provided below. "
+        "If the context does not contain the answer, say 'I cannot find the answer in the provided documents'.\n"
+    )
 
-async def generate_response_stream(
-    query: str, 
-    context_chunks: List[Dict[str, Any]]
-) -> AsyncGenerator[str, None]:
-    
-    context_text = "\n\n".join([f"source: {c['meta']['docTitle']}\ncontent: {c['text']}" for c in context_chunks])
-    
-    prompt = f"""You are a helpful assistant. unique instructions:
-    1. Answer the user question based ONLY on the provided context.
-    2. If the answer is not in the context, say "I don't have enough information."
-    3. Cite your sources by referring to the document titles provided.
-    
+    prompt = f"""
     Context:
     {context_text}
-    
+
     User Question: {query}
     
-    Answer:"""
+    Answer:
+    """
+
+    start_time = time.time()
     
     try:
-        model = genai.GenerativeModel(settings.VERTEX_MODEL)
-        response = model.generate_content(prompt, stream=True)
+        client = VertexR2D2Client.get_client()
         
-        for chunk in response:
-            if chunk.text:
-                yield chunk.text
+        # Configure generation config
+        config = GenerateContentConfig(
+            temperature=0.7,
+            max_output_tokens=1024,
+            system_instruction=system_instruction
+        )
+
+        response_stream = client.models.generate_content_stream(
+            model=settings.VERTEX_GENERATION_MODEL,
+            contents=prompt,
+            config=config
+        )
+
+        full_response = ""
+        
+        # Stream chunks
+        for chunk in response_stream:
+            # Depending on SDK version, text might be accessed differently
+            # google-genai v1.0+ usually has chunk.text
+            text_chunk = chunk.text
+            if text_chunk:
+                full_response += text_chunk
+                yield f"event: token\ndata: {json.dumps(text_chunk)}\n\n"
+
+        latency = time.time() - start_time
+        
+        # Best effort logging of request ID if available (SDK dependent)
+        # request_id = getattr(response_stream, "request_id", "unknown") 
+        # logger.info(f"Stream complete. RequestID: {request_id}, SessionID: {session_id}")
+
+        # Send done event
+        done_payload = {
+            "latency": latency,
+            "tokens": len(full_response.split()) # Approximate
+        }
+        yield f"event: done\ndata: {json.dumps(done_payload)}\n\n"
+
     except Exception as e:
         logger.error(f"Vertex AI generation error: {e}")
-        yield f"[Error generating response from Vertex AI: {str(e)}]"
+        
+        # Handle auth errors with refresh
+        if "401" in str(e) or "403" in str(e):
+            logger.warning("Auth error detected, refreshing token...")
+            VertexR2D2Client.refresh_on_error()
+            yield f"event: token\ndata: {json.dumps('[Auth Error: Token refreshed, please retry request]')}\n\n"
+        else:
+            yield f"event: token\ndata: {json.dumps(f'[Error generating response: {e}]')}\n\n"
+        
+        yield f"event: done\ndata: {{}}\n\n"
