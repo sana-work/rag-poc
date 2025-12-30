@@ -9,3 +9,4 @@ dist/
 data/interim/
 data/artifacts/
 logs/
+.angular/
