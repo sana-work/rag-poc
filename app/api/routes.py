@@ -47,31 +47,48 @@ async def chat_stream(
     }
     
     async def event_generator():
-        # Send 'meta' event
-        citations = [
-            {"id": c['chunkId'], "title": c['meta'].get('docTitle'), "score": c.get('score')} 
-            for c in chunks
-        ]
-        
-        yield f"event: meta\ndata: {json.dumps({'citations': citations, 'retrievalMode': settings.RETRIEVAL_MODE})}\n\n"
-        
-        # Stream Content
-        full_response = ""
-        generator = await get_llm_response(settings.MODE, q, chunks)
-        
-        async for token in generator:
-            full_response += token
-            yield f"event: token\ndata: {json.dumps({'text': token})}\n\n"
+        try:
+            # 1. Send 'meta' event with citations
+            citations = [
+                {
+                    "id": c.get('chunkId', 'unknown'), 
+                    "title": c.get('meta', {}).get('docTitle', 'Untitled'), 
+                    "score": float(c.get('score', 0))
+                } 
+                for c in chunks
+            ]
+            yield f"event: meta\ndata: {json.dumps({'citations': citations, 'retrievalMode': settings.RETRIEVAL_MODE})}\n\n"
             
-        # Log completion
-        latency = time.time() - start_time
-        log_data['latency'] = latency
-        log_data['response_length'] = len(full_response)
-        
-        # Structured Log
-        logger.info("Chat Request Completed", extra={"structured_data": log_data})
-        
-        yield f"event: done\ndata: {json.dumps({'latency': latency})}\n\n"
+            # 2. Get LLM generator (which now yields raw strings)
+            full_response = ""
+            try:
+                generator = await get_llm_response(settings.MODE, q, chunks)
+                async for token in generator:
+                    full_response += token
+                    # Yield raw token string back to UI
+                    yield f"event: token\ndata: {json.dumps(token)}\n\n"
+            except Exception as llm_e:
+                # Handle auth refresh
+                err_str = str(llm_e)
+                if "401" in err_str or "403" in err_str:
+                    logger.warning("Auth error during stream. Refreshing.")
+                    from app.llm.vertex_r2d2_client import VertexR2D2Client
+                    VertexR2D2Client.refresh_on_error()
+                    yield f"event: token\ndata: {json.dumps('[Auth Error: Token refreshed, please retry request]')}\n\n"
+                else:
+                    yield f"event: token\ndata: {json.dumps(f'[Error: {err_str}]')}\n\n"
+                
+            # 3. Log completion and send 'done'
+            latency = time.time() - start_time
+            log_data['latency'] = latency
+            log_data['response_length'] = len(full_response)
+            logger.info("Chat Request Completed", extra={"structured_data": log_data})
+            
+            yield f"event: done\ndata: {json.dumps({'latency': latency})}\n\n"
+            
+        except Exception as e:
+            logger.error(f"Event generator crash: {e}")
+            yield f"event: done\ndata: {{}}\n\n"
 
     return StreamingResponse(
         event_generator(),

@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GenAI RAG - Vanilla Interface</title>
+    <title>GenAI RAG PoC Interface</title>
     <style>
         :root {
             --bg-color: #f8fafc;
@@ -135,13 +135,13 @@
 
 <body>
     <header>
-        <h1>GenAI RAG POC <small style="color: grey; font-weight: normal;">(Vanilla JS)</small></h1>
+        <h1>GenAI RAG POC <small style="color: grey; font-weight: normal;"></small></h1>
         <div id="status" class="typing" style="display:none">AI is thinking...</div>
     </header>
 
     <div id="chat-container">
         <div class="message assistant">
-            Hello! I am your AI assistant. Ask me anything about the loaded documents.
+            Hello! I am your AI assistant. Ask me anything about the OpsUI Application.
         </div>
     </div>
 
@@ -160,12 +160,17 @@
         let sessionId = Math.random().toString(36).substring(7);
 
         function addMessage(content, role) {
-            const div = document.createElement('div');
-            div.className = `message ${role}`;
-            div.textContent = content;
-            chatContainer.appendChild(div);
+            const wrapper = document.createElement('div');
+            wrapper.className = `message ${role}`;
+
+            const textDiv = document.createElement('div');
+            textDiv.className = 'text-content';
+            textDiv.textContent = content;
+            wrapper.appendChild(textDiv);
+
+            chatContainer.appendChild(wrapper);
             chatContainer.scrollTop = chatContainer.scrollHeight;
-            return div;
+            return wrapper;
         }
 
         inputForm.onsubmit = (e) => {
@@ -179,30 +184,41 @@
 
             // Create placeholder for assistant response
             const responseDiv = addMessage('', 'assistant');
+            const textContent = responseDiv.querySelector('.text-content');
+
             status.style.display = 'block';
             sendBtn.disabled = true;
 
             // SSE Connection
-            // Note: In production, we assume API is at relative /api/chat/stream
             const url = `/api/chat/stream?q=${encodeURIComponent(query)}&sessionId=${sessionId}`;
             const eventSource = new EventSource(url);
 
             eventSource.addEventListener('token', (e) => {
-                const token = JSON.parse(e.data);
-                responseDiv.textContent += token;
-                chatContainer.scrollTop = chatContainer.scrollHeight;
+                try {
+                    const token = JSON.parse(e.data);
+                    // If it's the raw string (which our new backend sends)
+                    textContent.textContent += token;
+                    chatContainer.scrollTop = chatContainer.scrollHeight;
+                } catch (err) {
+                    console.error("Token parse error:", err);
+                }
             });
 
             eventSource.addEventListener('meta', (e) => {
-                const meta = JSON.parse(e.data);
-                if (meta.citations && meta.citations.length > 0) {
-                    const citeContainer = document.createElement('div');
-                    citeContainer.className = 'citations';
-                    citeContainer.innerHTML = '<strong>Sources:</strong> ';
-                    meta.citations.forEach(c => {
-                        citeContainer.innerHTML += `<span class="citation-tag" title="Score: ${c.score.toFixed(2)}">${c.title}</span>`;
-                    });
-                    responseDiv.appendChild(citeContainer);
+                try {
+                    const meta = JSON.parse(e.data);
+                    if (meta.citations && meta.citations.length > 0) {
+                        const citeContainer = document.createElement('div');
+                        citeContainer.className = 'citations';
+                        citeContainer.innerHTML = '<strong>Sources:</strong> ';
+                        meta.citations.forEach(c => {
+                            const title = c.title || 'Untitled';
+                            citeContainer.innerHTML += `<span class="citation-tag" title="Score: ${c.score ? c.score.toFixed(2) : 'N/A'}">${title}</span>`;
+                        });
+                        responseDiv.appendChild(citeContainer);
+                    }
+                } catch (err) {
+                    console.error("Meta parse error:", err);
                 }
             });
 

@@ -7,9 +7,9 @@ from google.genai import types
 
 logger = logging.getLogger(__name__)
 
-async def generate_response_stream(query: str, context_chunks: list, session_id:str):
+async def generate_response_stream(query: str, context_chunks: list):
     """
-    Streams response from Vertex AI Gemini using R2D2 client.
+    Streams raw tokens from Vertex AI Gemini using R2D2 client.
     """
     
     # Construct prompt
@@ -30,8 +30,6 @@ async def generate_response_stream(query: str, context_chunks: list, session_id:
     Answer:
     """
 
-    start_time = time.time()
-    
     try:
         client = VertexR2D2Client.get_client()
         
@@ -48,39 +46,13 @@ async def generate_response_stream(query: str, context_chunks: list, session_id:
             config=config
         )
 
-        full_response = ""
-        
-        # Stream chunks
+        # Stream raw tokens
         for chunk in response_stream:
-            # Depending on SDK version, text might be accessed differently
-            # google-genai v1.0+ usually has chunk.text
             text_chunk = chunk.text
             if text_chunk:
-                full_response += text_chunk
-                yield f"event: token\ndata: {json.dumps(text_chunk)}\n\n"
-
-        latency = time.time() - start_time
-        
-        # Best effort logging of request ID if available (SDK dependent)
-        # request_id = getattr(response_stream, "request_id", "unknown") 
-        # logger.info(f"Stream complete. RequestID: {request_id}, SessionID: {session_id}")
-
-        # Send done event
-        done_payload = {
-            "latency": latency,
-            "tokens": len(full_response.split()) # Approximate
-        }
-        yield f"event: done\ndata: {json.dumps(done_payload)}\n\n"
+                yield text_chunk
 
     except Exception as e:
         logger.error(f"Vertex AI generation error: {e}")
-        
-        # Handle auth errors with refresh
-        if "401" in str(e) or "403" in str(e):
-            logger.warning("Auth error detected, refreshing token...")
-            VertexR2D2Client.refresh_on_error()
-            yield f"event: token\ndata: {json.dumps('[Auth Error: Token refreshed, please retry request]')}\n\n"
-        else:
-            yield f"event: token\ndata: {json.dumps(f'[Error generating response: {e}]')}\n\n"
-        
-        yield f"event: done\ndata: {{}}\n\n"
+        # Re-raise to let the API layer handle or report the error
+        raise e

@@ -8,7 +8,7 @@ The system is designed as a **decoupled retrieval and generation pipeline** that
 
 ```mermaid
 graph TD
-    Client["Browser (Vanilla JS)"] -- "GET /api/chat/stream?q=..." --> API["FastAPI Server"]
+    Client["Browser"] -- "GET /api/chat/stream?q=..." --> API["FastAPI Server"]
     API -- "Embed Query" --> Embedder["Vertex AI Embedder (via R2D2)"]
     API -- "Search" --> Retriever["FAISS / TF-IDF"]
     Retriever -- "Load Context" --> Files["Local Data Files"]
@@ -46,6 +46,5 @@ graph TD
 - **PII Protection**: Structured logging with redaction identifies and masks sensitive patterns.
 ```
 
----
-
+-----------------------------------------------------------------------
 *Note: For setup instructions, please refer to [README.md](README.md).*
