@@ -12,15 +12,16 @@ from app.utils.redaction import Redactor
 from app.retrieval.factory import get_retriever
 
 # Import LLM handlers
-from app.llm import vertex_stream, none_extractive
+from app.llm import vertex_stream, none_extractive, intent_router
+from app.llm.intent_router import Intent
 
 router = APIRouter()
 
-async def get_llm_response(mode: str, query: str, chunks: list):
+async def get_llm_response(mode: str, query: str, chunks: list, system_instruction: str = None):
     if mode == "vertex":
-        return vertex_stream.generate_response_stream(query, chunks)
+        return vertex_stream.generate_response_stream(query, chunks, system_instruction)
     else:
-        return none_extractive.generate_response_stream(query, chunks)
+        return none_extractive.generate_response_stream(query, chunks, system_instruction)
 
 @router.get("/chat/stream")
 async def chat_stream(
@@ -32,14 +33,30 @@ async def chat_stream(
     start_time = time.time()
     redacted_q = Redactor.redact(q)
     
-    # 1. Retrieve
-    retriever = get_retriever()
-    chunks = retriever.retrieve(q, top_k=topK)
-    
-    # 2. Prepare Log Data
+    # 1. Intent Detection
+    intent = await intent_router.predict_intent(q)
+    logger.info(f"Detected intent for {sessionId}: {intent}")
+
+    # 2. Decision Logic based on Intent
+    chunks = []
+    system_instruction = None
+
+    if intent == Intent.GREETING:
+        system_instruction = "You are a friendly AI assistant. Greet the user warmly and ask how you can help them today. Do NOT use search results."
+    elif intent == Intent.CLOSURE:
+        system_instruction = "The user is finishing the conversation or saying thanks. Respond politely and wish them a great day!"
+    elif intent == Intent.OFF_TOPIC:
+        system_instruction = "You are a helpful AI assistant. The user has asked something outside your specialized knowledge of the uploaded documents. Politely inform them that you are focused on the documentation and ask if they have questions about that."
+    else:
+        # RAG_QUERY: Proceed with retrieval
+        retriever = get_retriever()
+        chunks = retriever.retrieve(q, top_k=topK)
+
+    # 3. Prepare Log Data
     log_data = {
         "sessionId": sessionId,
         "query": redacted_q,
+        "intent": intent,
         "retrieval_mode": settings.RETRIEVAL_MODE,
         "mode": settings.MODE,
         "retrieved_chunks": [c['chunkId'] for c in chunks],
@@ -48,7 +65,7 @@ async def chat_stream(
     
     async def event_generator():
         try:
-            # 1. Send 'meta' event with citations
+            # 1. Send 'meta' event with citations and intent
             citations = [
                 {
                     "id": c.get('chunkId', 'unknown'), 
@@ -57,26 +74,58 @@ async def chat_stream(
                 } 
                 for c in chunks
             ]
-            yield f"event: meta\ndata: {json.dumps({'citations': citations, 'retrievalMode': settings.RETRIEVAL_MODE})}\n\n"
+            yield f"event: meta\ndata: {json.dumps({'citations': citations, 'retrievalMode': settings.RETRIEVAL_MODE, 'intent': intent})}\n\n"
             
-            # 2. Get LLM generator (which now yields raw strings)
+            # 2. Get LLM generator
             full_response = ""
-            try:
-                generator = await get_llm_response(settings.MODE, q, chunks)
-                async for token in generator:
-                    full_response += token
-                    # Yield raw token string back to UI
-                    yield f"event: token\ndata: {json.dumps(token)}\n\n"
-            except Exception as llm_e:
-                # Handle auth refresh
-                err_str = str(llm_e)
-                if "401" in err_str or "403" in err_str:
-                    logger.warning("Auth error during stream. Refreshing.")
-                    from app.llm.vertex_r2d2_client import VertexR2D2Client
-                    VertexR2D2Client.refresh_on_error()
-                    yield f"event: token\ndata: {json.dumps('[Auth Error: Token refreshed, please retry request]')}\n\n"
+            
+            # Handle direct resolution intents (GREETING, CLOSURE, OFF_TOPIC)
+            if intent in [Intent.GREETING, Intent.CLOSURE, Intent.OFF_TOPIC]:
+                if settings.MODE == "none":
+                    if intent == Intent.GREETING:
+                        full_response = "Hello! I am your local AI assistant. How can I help you explore the OpsUI Application today?"
+                    elif intent == Intent.CLOSURE:
+                        full_response = "You're very welcome! If you have more questions later, feel free to ask. Have a great day!"
+                    else:
+                        full_response = "I'm optimized for technical documentation queries. Please ask about the software or app details!"
                 else:
-                    yield f"event: token\ndata: {json.dumps(f'[Error: {err_str}]')}\n\n"
+                    try:
+                        generator = await get_llm_response(settings.MODE, q, chunks, system_instruction)
+                        async for token in generator:
+                            full_response += token
+                            yield f"event: token\ndata: {json.dumps(token)}\n\n"
+                    except Exception as llm_e:
+                        # LLM Fallback for Vertex mode
+                        static_map = {
+                            Intent.GREETING: "Hello! I am your AI assistant. How can I help you today?",
+                            Intent.CLOSURE: "You're welcome! Let me know if you need anything else.",
+                            Intent.OFF_TOPIC: "I'm focused on the technical documentation provided."
+                        }
+                        full_response = static_map.get(intent, "Hello!")
+                
+                if full_response:
+                    yield f"event: token\ndata: {json.dumps(full_response)}\n\n"
+            
+            # Handle RAG_QUERY
+            elif intent == Intent.RAG_QUERY:
+                if not chunks and settings.MODE == "none":
+                    full_response = "I'm sorry, I couldn't find any specific information about that in the documents. Could you please rephrase your question?"
+                    yield f"event: token\ndata: {json.dumps(full_response)}\n\n"
+                else:
+                    try:
+                        generator = await get_llm_response(settings.MODE, q, chunks, system_instruction)
+                        async for token in generator:
+                            full_response += token
+                            yield f"event: token\ndata: {json.dumps(token)}\n\n"
+                    except Exception as e:
+                        err_str = str(e)
+                        if "401" in err_str or "403" in err_str:
+                            logger.warning("Auth error. Refreshing token.")
+                            from app.llm.vertex_r2d2_client import VertexR2D2Client
+                            VertexR2D2Client.refresh_on_error()
+                            yield f"event: token\ndata: {json.dumps('[Auth Error: Token refreshed, please retry]')}\n\n"
+                        else:
+                            yield f"event: token\ndata: {json.dumps(f'[Error: {err_str}]')}\n\n"
                 
             # 3. Log completion and send 'done'
             latency = time.time() - start_time
@@ -115,15 +164,59 @@ async def chat_post(
     start_time = time.time()
     redacted_q = Redactor.redact(q)
     
-    # 1. Retrieve
-    retriever = get_retriever()
-    chunks = retriever.retrieve(q, top_k=topK)
+    # Intent Detection
+    intent = await intent_router.predict_intent(q)
     
-    # 2. Generate (collect stream)
-    generator = await get_llm_response(settings.MODE, q, chunks)
+    chunks = []
+    system_instruction = None
+
+    if intent == Intent.GREETING:
+        system_instruction = "You are a friendly AI assistant. Greet the user warmly."
+    elif intent == Intent.CLOSURE:
+        system_instruction = "The user is saying goodbye or thank you. Wish them well."
+    elif intent == Intent.OFF_TOPIC:
+        system_instruction = "Helpful AI assistant, but politely decline off-topic questions."
+    else:
+        retriever = get_retriever()
+        chunks = retriever.retrieve(q, top_k=topK)
+
+    # Generate
     full_response = ""
-    async for token in generator:
-        full_response += token
+    
+    # Handle direct resolution intents (GREETING, CLOSURE, OFF_TOPIC)
+    if intent in [Intent.GREETING, Intent.CLOSURE, Intent.OFF_TOPIC]:
+        if settings.MODE == "none":
+            if intent == Intent.GREETING:
+                full_response = "Hello! I am your local AI assistant. How can I help you explore the OpsUI Application today?"
+            elif intent == Intent.CLOSURE:
+                full_response = "You're very welcome! Have a great day!"
+            else:
+                full_response = "I'm optimized for technical documentation queries. Please ask about the software!"
+        else:
+            try:
+                generator = await get_llm_response(settings.MODE, q, chunks, system_instruction)
+                async for token in generator:
+                    full_response += token
+            except Exception:
+                # Fallback to static if LLM fails
+                static_map = {
+                    Intent.GREETING: "Hello! I am your AI assistant. How can I help you today?",
+                    Intent.CLOSURE: "You're welcome! Let me know if you need anything else.",
+                    Intent.OFF_TOPIC: "I'm focused on the technical documentation provided."
+                }
+                full_response = static_map.get(intent, "Hello!")
+    
+    # Handle RAG_QUERY
+    elif intent == Intent.RAG_QUERY:
+        if not chunks and settings.MODE == "none":
+            full_response = "I'm sorry, I couldn't find any specific information about that in the documents."
+        else:
+            try:
+                generator = await get_llm_response(settings.MODE, q, chunks, system_instruction)
+                async for token in generator:
+                    full_response += token
+            except Exception as e:
+                full_response = f"[Error: {str(e)}]"
         
     latency = time.time() - start_time
     
@@ -131,6 +224,7 @@ async def chat_post(
     log_data = {
         "sessionId": sessionId,
         "query": redacted_q,
+        "intent": intent,
         "retrieval_mode": settings.RETRIEVAL_MODE,
         "mode": settings.MODE,
         "retrieved_chunks": [c['chunkId'] for c in chunks],
@@ -140,6 +234,7 @@ async def chat_post(
     
     return JSONResponse({
         "answer": full_response,
+        "intent": intent,
         "citations": [
             {"id": c['chunkId'], "title": c['meta'].get('docTitle'), "score": c.get('score')} 
             for c in chunks

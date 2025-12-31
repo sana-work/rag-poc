@@ -13,6 +13,7 @@ This directory contains the logic that runs while the server is active.
 *   **`config.py`**: The "Settings" hub. It reads the `.env` file and shares configurations (like model names, SOEIDs, and folder paths) with the rest of the app.
 *   **`api/routes.py`**: The "Traffic Controller". It handles the URL endpoints (like `/chat/stream`). When a user asks a question, this file coordinates the retrieval and the LLM generation.
 *   **`llm/`**:
+    *   **`intent_router.py`**: The "Traffic Cop". It uses regex patterns and Vertex AI to classify the user's intent (e.g., Greeting, Goodbye, Search) and routes the request accordingly.
     *   **`vertex_r2d2_client.py`**: The "Bouncer". It manages authentication with Helix, fetches the access token, and sets up the secure R2D2 connection to Google.
     *   **`vertex_stream.py`**: The "Speaker". It sends the prompt to Gemini and gets back the streaming text.
     *   **`none_extractive.py`**: The "Fallback". If LLM mode is off, this file simply shows the search results directly.
@@ -43,9 +44,9 @@ These are run manually to prepare your data.
 
 ### Phase B: Asking a Question (The Chat Flow)
 1.  **UI**: User types "What is Gemini?" in `ui/index.html`.
-2.  **Route**: The request hits `api/routes.py`.
+2.  **Intent Check**: The request hits `api/routes.py` and `intent_router.py` classifies the query.
 3.  **Search**:
-    *   `routes.py` sends the question to `retriever_faiss_vertex.py`.
+    *   If the intent is a search, `routes.py` sends the question to `retriever_faiss_vertex.py`.
     *   The question is turned into a Vector.
     *   The retriever finds the **top 3 most similar** text chunks in your saved FAISS index.
 4.  **Generate**:
@@ -67,5 +68,6 @@ These are run manually to prepare your data.
 | **Vectorization** | Turning text into math | `vertex_embedder.py`, `build_index.py` |
 | **Retrieval** | Searching for context | `factory.py`, `retriever_faiss_vertex.py` |
 | **Auth** | Helix/R2D2 Security | `vertex_r2d2_client.py` |
+| **Intent** | Routing user requests | `intent_router.py` |
 | **Generation** | Creating the final answer | `vertex_stream.py` |
 | **Interface** | Showing the chat UI | `index.html`, `main.py` |

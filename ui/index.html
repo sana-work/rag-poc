@@ -135,7 +135,9 @@
 
 <body>
     <header>
-        <h1>GenAI RAG POC <small style="color: grey; font-weight: normal;"></small></h1>
+        <h1>GenAI RAG POC <small id="mode-badge"
+                style="color: #64748b; font-weight: normal; font-size: 0.8rem; border: 1px solid var(--border); padding: 2px 6px; border-radius: 4px; margin-left: 10px;"></small>
+        </h1>
         <div id="status" class="typing" style="display:none">AI is thinking...</div>
     </header>
 
@@ -207,6 +209,23 @@
             eventSource.addEventListener('meta', (e) => {
                 try {
                     const meta = JSON.parse(e.data);
+
+                    // Update mode badge
+                    const modeBadge = document.getElementById('mode-badge');
+                    modeBadge.textContent = meta.retrievalMode ? meta.retrievalMode.toUpperCase() : '';
+
+                    // Display intent badge in the message
+                    if (meta.intent) {
+                        const intentBadge = document.createElement('div');
+                        intentBadge.style.fontSize = '0.7rem';
+                        intentBadge.style.color = '#94a3b8';
+                        intentBadge.style.marginBottom = '5px';
+                        intentBadge.style.textTransform = 'uppercase';
+                        intentBadge.style.letterSpacing = '0.05em';
+                        intentBadge.textContent = `Intent: ${meta.intent}`;
+                        responseDiv.prepend(intentBadge);
+                    }
+
                     if (meta.citations && meta.citations.length > 0) {
                         const citeContainer = document.createElement('div');
                         citeContainer.className = 'citations';

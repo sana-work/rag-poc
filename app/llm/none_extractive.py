@@ -3,13 +3,14 @@ import json
 
 async def generate_response_stream(
     query: str, 
-    context_chunks: List[Dict[str, Any]]
+    context_chunks: List[Dict[str, Any]],
+    system_instruction: str = None
 ) -> AsyncGenerator[str, None]:
     
     yield "### Extractive Answer (No LLM Mode)\n\n"
     
     if not context_chunks:
-        yield "No relevant information found."
+        yield "I'm sorry, I couldn't find any specific information about that in the uploaded documents. Could you please rephrase your question or try a different topic?"
         return
 
     yield "I found the following relevant information:\n\n"

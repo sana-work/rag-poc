@@ -7,7 +7,7 @@ from google.genai import types
 
 logger = logging.getLogger(__name__)
 
-async def generate_response_stream(query: str, context_chunks: list):
+async def generate_response_stream(query: str, context_chunks: list, system_instruction: str = None):
     """
     Streams raw tokens from Vertex AI Gemini using R2D2 client.
     """
@@ -15,11 +15,13 @@ async def generate_response_stream(query: str, context_chunks: list):
     # Construct prompt
     context_text = "\n\n".join([c.get('text', '') for c in context_chunks])
     
-    system_instruction = (
-        "You are a helpful AI assistant. "
-        "Answer the user's question using ONLY the context provided below. "
-        "If the context does not contain the answer, say 'I cannot find the answer in the provided documents'.\n"
-    )
+    # Default instruction if none provided
+    if not system_instruction:
+        system_instruction = (
+            "You are a helpful AI assistant. "
+            "Answer the user's question using ONLY the context provided below. "
+            "If the context does not contain the answer, say 'I cannot find the answer in the provided documents'.\n"
+        )
 
     prompt = f"""
     Context:

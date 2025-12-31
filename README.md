@@ -79,9 +79,17 @@ Open your browser at: **[http://localhost:8000/](http://localhost:8000/)**
 ---
 
 ## Key Features
-- **Streaming UI**: Real-time response generation via SSE.
-- **Citations**: Automatic document sourcing and relevance scores.
-- **Search Fallbacks**: Automatically uses FAISS (if Vertex is available) or falls back to TF-IDF.
+- **Streaming UI**: Dynamic responses via Server-Sent Events (SSE).
+- **Advanced Intent Detection**: 
+    - **`GREETING`**: Warm welcomes.
+    - **`CLOSURE`**: Detects goodbyes and thanks (e.g., "Bye", "Thanks").
+    - **`OFF_TOPIC`**: Keeps the conversation focused on docs.
+    - **`RAG_QUERY`**: Specialized search across your PDFs.
+- **Hybrid Security**: Integrated Helix token refresh and R2D2 gateway routing.
+- **Operating Modes**:
+    - **Vertex AI (LLM)**: Full capability with generative reasoning.
+    - **Local Extractive (None)**: Fast, offline-first search fallback.
+- **Citations**: Interactive sourcing with relevance scoring.
 
 ## Troubleshooting
 - **401/403 Error**: Run `helix auth login` to refresh your session.
