@@ -43,41 +43,65 @@ def parse_html(file_path: Path) -> str:
         return ""
 
 def ingest_docs(input_dir: str, output_dir: str):
-    input_path = Path(input_dir)
-    output_path = Path(output_dir)
+    input_path = Path(input_dir).resolve()
+    output_path = Path(output_dir).resolve()
+    
+    logger.info(f"Checking input directory: {input_path}")
+    
+    if not input_path.exists():
+        logger.error(f"Input directory does not exist: {input_path}")
+        return
+    
+    if not input_path.is_dir():
+        logger.error(f"Input path is not a directory: {input_path}")
+        return
+
     output_path.mkdir(parents=True, exist_ok=True)
     
     supported_extensions = {'.pdf': parse_pdf, '.docx': parse_docx, '.html': parse_html}
     
     count = 0
+    skipped = 0
+    total_files = 0
+    
     for file_path in input_path.rglob('*'):
-        if file_path.suffix.lower() in supported_extensions:
-            parser = supported_extensions[file_path.suffix.lower()]
-            logger.info(f"Processing {file_path.name}...")
-            
-            text = parser(file_path)
-            if text:
-                # Normalize whitespace
-                text = " ".join(text.split())
+        if file_path.is_file():
+            total_files += 1
+            if file_path.suffix.lower() in supported_extensions:
+                parser = supported_extensions[file_path.suffix.lower()]
+                logger.info(f"Processing {file_path.name}...")
                 
-                doc_id = file_path.stem
-                output_file = output_path / f"{doc_id}.txt"
+                text = parser(file_path)
+                if text:
+                    # Normalize whitespace
+                    text = " ".join(text.split())
+                    
+                    doc_id = file_path.stem
+                    output_file = output_path / f"{doc_id}.txt"
+                    
+                    with open(output_file, 'w', encoding='utf-8') as f:
+                        f.write(text)
+                    
+                    # Save metadata
+                    meta_file = output_path / f"{doc_id}.meta.json"
+                    with open(meta_file, 'w', encoding='utf-8') as f:
+                        json.dump({
+                            "sourcePath": str(file_path),
+                            "docTitle": file_path.name,
+                            "docId": doc_id
+                        }, f)
+                    
+                    count += 1
+                else:
+                    logger.warning(f"Failed to extract text from {file_path.name}")
+                    skipped += 1
+            else:
+                skipped += 1
                 
-                with open(output_file, 'w', encoding='utf-8') as f:
-                    f.write(text)
-                
-                # Save metadata
-                meta_file = output_path / f"{doc_id}.meta.json"
-                with open(meta_file, 'w', encoding='utf-8') as f:
-                    json.dump({
-                        "sourcePath": str(file_path),
-                        "docTitle": file_path.name,
-                        "docId": doc_id
-                    }, f)
-                
-                count += 1
-                
-    logger.info(f"Ingested {count} documents to {output_dir}")
+    logger.info(f"Found {total_files} total files in {input_path}")
+    logger.info(f"Ingested {count} documents to {output_path}")
+    if total_files > 0 and count == 0:
+        logger.warning(f"Found {total_files} files but ingested 0. Ensure files have extensions: {list(supported_extensions.keys())}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Ingest documents")
