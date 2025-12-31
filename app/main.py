@@ -18,9 +18,17 @@ app.add_middleware(
 
 app.include_router(router, prefix="/api")
 
-# Mount UI Files
+# Standardized Paths
 ui_dir = (settings.BASE_DIR / "ui").resolve()
 
+@app.get("/")
+async def read_index():
+    index_file = ui_dir / "index.html"
+    if not index_file.exists():
+        return JSONResponse({"error": "UI files missing"}, status_code=404)
+    return FileResponse(str(index_file))
+
+# Mount UI Files
 app.mount("/static", StaticFiles(directory=str(ui_dir)), name="static")
 
 @app.get("/favicon.ico", include_in_schema=False)
@@ -29,17 +37,6 @@ async def favicon():
     if fav_file.exists():
         return FileResponse(str(fav_file))
     return JSONResponse({"detail": "not found"}, status_code=404)
-
-@app.get("/")
-async def read_index():
-    index_file = ui_dir / "index.html"
-    if not index_file.exists():
-        return JSONResponse({
-            "error": "UI files missing", 
-            "checked_path": str(index_file),
-            "base_dir": str(settings.BASE_DIR)
-        }, status_code=404)
-    return FileResponse(str(index_file), headers={"X-UI-Path": str(index_file)})
 
 @app.get("/health")
 def health_check():
