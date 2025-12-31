@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from app.api.routes import router
 from app.config import settings
 
@@ -20,21 +20,26 @@ app.include_router(router, prefix="/api")
 
 # Mount UI Files
 ui_dir = (settings.BASE_DIR / "ui").resolve()
-print(f"DEBUG: BASE_DIR is {settings.BASE_DIR}")
-print(f"DEBUG: UI_DIR is {ui_dir}")
 
-if not ui_dir.exists():
-    print(f"CRITICAL ERROR: UI directory not found at {ui_dir}")
+app.mount("/static", StaticFiles(directory=str(ui_dir)), name="static")
 
-app.mount("/ui", StaticFiles(directory=str(ui_dir)), name="ui")
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon():
+    fav_file = ui_dir / "favicon.ico"
+    if fav_file.exists():
+        return FileResponse(str(fav_file))
+    return JSONResponse({"detail": "not found"}, status_code=404)
 
 @app.get("/")
 async def read_index():
     index_file = ui_dir / "index.html"
     if not index_file.exists():
-        print(f"ERROR: index.html not found at {index_file}")
-        return {"error": "UI files missing", "path": str(index_file)}
-    return FileResponse(str(index_file))
+        return JSONResponse({
+            "error": "UI files missing", 
+            "checked_path": str(index_file),
+            "base_dir": str(settings.BASE_DIR)
+        }, status_code=404)
+    return FileResponse(str(index_file), headers={"X-UI-Path": str(index_file)})
 
 @app.get("/health")
 def health_check():
