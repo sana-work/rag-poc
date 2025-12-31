@@ -54,7 +54,11 @@ pip install -r requirements.txt
 ```
 
 ### 2. Configuration
-Copy `.env.example` to `.env` and fill in:
+```bash
+# Copy example environment file
+cp .env.example .env
+```
+Fill in the following values in `.env`:
 - `R2D2_VERTEX_BASE_URL`
 - `R2D2_SOEID`
 - `GOOGLE_CLOUD_PROJECT`
