@@ -1,6 +1,6 @@
-# Informational RAG PoC (Python + Vanilla JS)
+# Informational RAG PoC (Python + JS)
 
-A simplified, enterprise-ready RAG (Retrieval Augmented Generation) system. This version uses a lightweight Vanilla JS frontend served directly by a FastAPI backend, removing the need for Node.js or Angular dependencies at runtime.
+A simplified, enterprise-ready RAG (Retrieval Augmented Generation) system. This version uses a lightweight JS frontend served directly by a FastAPI backend.
 
 ## Project Structure
 
