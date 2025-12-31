@@ -19,12 +19,21 @@ app.add_middleware(
 app.include_router(router, prefix="/api")
 
 # Mount UI Files
-ui_dir = settings.BASE_DIR / "ui"
+ui_dir = (settings.BASE_DIR / "ui").resolve()
+print(f"DEBUG: BASE_DIR is {settings.BASE_DIR}")
+print(f"DEBUG: UI_DIR is {ui_dir}")
+
+if not ui_dir.exists():
+    print(f"CRITICAL ERROR: UI directory not found at {ui_dir}")
+
 app.mount("/ui", StaticFiles(directory=str(ui_dir)), name="ui")
 
 @app.get("/")
 async def read_index():
     index_file = ui_dir / "index.html"
+    if not index_file.exists():
+        print(f"ERROR: index.html not found at {index_file}")
+        return {"error": "UI files missing", "path": str(index_file)}
     return FileResponse(str(index_file))
 
 @app.get("/health")
