@@ -29,6 +29,14 @@ def build_index():
     chunks_file = artifacts_dir / "chunks.jsonl"
     faiss_index_file = artifacts_dir / "faiss.index"
     
+    # Ensure artifacts directory exists
+    artifacts_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Check if ingestion has run
+    if not interim_dir.exists() or not list(interim_dir.glob("*.txt")):
+        logger.error(f"No processed documents found in {interim_dir}. Please run 'python scripts/ingest_docs.py' first.")
+        return
+    
     # 1. Load Chunks
     # Ideally, we should reload from source texts and re-chunk. 
     # But for now, we assume chunks.jsonl is already populated by ingest_docs.py (or we read from interim).
