@@ -5,14 +5,19 @@ from pathlib import Path
 import json
 import logging
 from typing import List
+
+# Setup robust path handling - MUST be before importing from 'app'
+BASE_DIR = Path(__file__).parent.parent
+if str(BASE_DIR) not in sys.path:
+    sys.path.append(str(BASE_DIR))
+
+# Import project modules
+from app.config import settings
+
+# Import third-party parsers
 from pypdf import PdfReader
 from docx import Document
 from bs4 import BeautifulSoup
-from app.config import settings
-
-# Setup robust path handling
-BASE_DIR = Path(__file__).parent.parent
-sys.path.append(str(BASE_DIR))
 
 
 
