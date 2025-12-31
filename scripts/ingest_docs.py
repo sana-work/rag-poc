@@ -1,14 +1,21 @@
 import os
 import argparse
+import sys
 from pathlib import Path
 import json
 import logging
 from typing import List
-
-# Import parsers
 from pypdf import PdfReader
 from docx import Document
 from bs4 import BeautifulSoup
+from app.config import settings
+
+# Setup robust path handling
+BASE_DIR = Path(__file__).parent.parent
+sys.path.append(str(BASE_DIR))
+
+
+
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -105,8 +112,8 @@ def ingest_docs(input_dir: str, output_dir: str):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Ingest documents")
-    parser.add_argument("--input", required=True, help="Input directory containing docs")
-    parser.add_argument("--output", default="data/interim", help="Output directory for text")
+    parser.add_argument("--input", default=str(settings.DATA_DIR / "source"), help="Input directory containing docs")
+    parser.add_argument("--output", default=str(settings.DATA_DIR / "interim"), help="Output directory for text")
     args = parser.parse_args()
     
     ingest_docs(args.input, args.output)
