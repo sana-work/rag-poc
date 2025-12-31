@@ -19,11 +19,13 @@ app.add_middleware(
 app.include_router(router, prefix="/api")
 
 # Mount UI Files
-app.mount("/ui", StaticFiles(directory="ui"), name="ui")
+ui_dir = settings.BASE_DIR / "ui"
+app.mount("/ui", StaticFiles(directory=str(ui_dir)), name="ui")
 
 @app.get("/")
 async def read_index():
-    return FileResponse("ui/index.html")
+    index_file = ui_dir / "index.html"
+    return FileResponse(str(index_file))
 
 @app.get("/health")
 def health_check():
