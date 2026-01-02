@@ -12,7 +12,7 @@ sys.path.append(str(Path(__file__).parent.parent))
 
 from config import settings
 # Import the new Vertex Embedder
-from embeddings.vertex_embedder import VertexEmbedder
+from llm.embeddings.vertex_embedder import VertexEmbedder
 import numpy as np
 import faiss
 
@@ -34,7 +34,7 @@ def build_index():
     
     # Check if ingestion has run
     if not interim_dir.exists() or not list(interim_dir.glob("*.txt")):
-        logger.error(f"No processed documents found in {interim_dir}. Please run 'python scripts/ingest_docs.py' first.")
+        logger.error(f"No processed documents found in {interim_dir}. Please run 'python tools/ingest_docs.py' first.")
         return
     
     # 1. Load Chunks

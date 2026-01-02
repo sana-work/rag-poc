@@ -38,26 +38,16 @@ class VertexR2D2Client:
 
     @classmethod
     def _refresh_token(cls):
-        """Executes helix command to get a fresh access token."""
         try:
-            logger.info("Executing Helix command to fetch access token...")
             if not settings.HELIX_TOKEN_CMD:
-                raise ValueError("HELIX_TOKEN_CMD not configured")
-                
-            result = subprocess.run(
-                settings.HELIX_TOKEN_CMD, 
-                shell=True,
-                check=True, 
-                stdout=subprocess.PIPE, 
-                text=True
-            )
-            token = result.stdout.strip()
-            if not token:
-                raise ValueError("Helix command returned empty token")
-            
-            cls._token = token
+                raise ValueError("HELIX_TOKEN_CMD missing")
+            result = subprocess.run(settings.HELIX_TOKEN_CMD, shell=True, check=True, capture_output=True, text=True)
+            cls._token = result.stdout.strip()
             cls._token_expiry = time.time() + cls._TOKEN_LIFETIME
-            logger.info("Successfully refreshed Helix token")
+            logger.info("Token refreshed via Helix")
+        except Exception as e:
+            logger.error(f"Helix token failed: {e}")
+            raise
             
         except subprocess.CalledProcessError as e:
             logger.error(f"Helix command failed: {e}")
@@ -68,40 +58,19 @@ class VertexR2D2Client:
 
     @classmethod
     def _create_client(cls):
-        """Constructs the google.genai.Client with R2D2 configuration."""
-        if not cls._token:
-            raise ValueError("No access token available")
-        if not settings.R2D2_VERTEX_BASE_URL:
-            raise ValueError("R2D2_VERTEX_BASE_URL not configured")
-        if settings.R2D2_VERTEX_BASE_URL and ("<" in settings.R2D2_VERTEX_BASE_URL or ">" in settings.R2D2_VERTEX_BASE_URL):
-            raise ValueError(f"R2D2_VERTEX_BASE_URL contains placeholder characters: {settings.R2D2_VERTEX_BASE_URL}. Please update your .env file with the actual host.")
-            
-        if not settings.GOOGLE_CLOUD_PROJECT:
-            raise ValueError("GOOGLE_CLOUD_PROJECT not configured")
-        if not settings.GOOGLE_CLOUD_LOCATION:
-            raise ValueError("GOOGLE_CLOUD_LOCATION not configured")
-
-        logger.info(f"Creating R2D2 Vertex Client for project {settings.GOOGLE_CLOUD_PROJECT}")
+        if not cls._token: raise ValueError("No token")
+        if not all([settings.R2D2_VERTEX_BASE_URL, settings.GOOGLE_CLOUD_PROJECT, settings.GOOGLE_CLOUD_LOCATION]):
+            raise ValueError("Incomplete R2D2 configuration")
         
-        # Headers for R2D2 - Matching check_connection.py logic
-        # Allow R2D2_SOEID to override USER if explicitly set, otherwise default to USER
-        headers = {}
         soe_id = settings.R2D2_SOEID or os.getenv("USER", "")
-        if soe_id:
-             headers["x-r2d2-soeid"] = soe_id
+        headers = {"x-r2d2-soeid": soe_id} if soe_id else {}
         
-        # Use google.oauth2.credentials.Credentials to wrap the raw token
-        creds = Credentials(cls._token)
-
         cls._client = Client(
             vertexai=True,
             project=settings.GOOGLE_CLOUD_PROJECT,
             location=settings.GOOGLE_CLOUD_LOCATION,
-            credentials=creds,
-            http_options=HttpOptions(
-                base_url=settings.R2D2_VERTEX_BASE_URL,
-                headers=headers
-            )
+            credentials=Credentials(cls._token),
+            http_options=HttpOptions(base_url=settings.R2D2_VERTEX_BASE_URL, headers=headers)
         )
 
     @classmethod

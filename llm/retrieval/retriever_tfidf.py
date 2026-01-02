@@ -4,7 +4,7 @@ import logging
 from typing import List, Dict, Any
 from pathlib import Path
 from config import settings
-from retrieval.base import BaseRetriever
+from llm.retrieval.base import BaseRetriever
 from sklearn.metrics.pairwise import cosine_similarity
 
 logger = logging.getLogger(__name__)

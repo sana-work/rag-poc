@@ -1,9 +1,9 @@
 import logging
 import os
 from config import settings
-from retrieval.base import BaseRetriever
-from retrieval.retriever_tfidf import TfidfRetriever
-from retrieval.retriever_brute import BruteRetriever
+from llm.retrieval.base import BaseRetriever
+from llm.retrieval.retriever_tfidf import TfidfRetriever
+from llm.retrieval.retriever_brute import BruteRetriever
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +16,7 @@ def get_retriever() -> BaseRetriever:
     
     if mode == "faiss":
         try:
-            from retrieval.retriever_faiss_vertex import FaissVertexRetriever
+            from llm.retrieval.retriever_faiss_vertex import FaissVertexRetriever
             index_path = settings.DATA_DIR / "artifacts" / "faiss.index"
             chunks_path = settings.DATA_DIR / "artifacts" / "chunks.jsonl"
             

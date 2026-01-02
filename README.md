@@ -7,21 +7,24 @@ A simplified, enterprise-ready RAG (Retrieval Augmented Generation) system. This
 ```text
 rag-poc/
 ├── api/              # API endpoints (Streaming, Health)
-├── embeddings/       # Vertex AI Embedding logic
-├── llm/              # Vertex AI Generation & R2D2/Helix Auth
-├── retrieval/        # FAISS & TF-IDF search logic
+├── llm/              # Core Logic (Auth, Generation, Retrieval)
+│   ├── embeddings/   # Vertex AI Embedding logic
+│   ├── retrieval/    # FAISS & TF-IDF search logic
+│   ├── intent_router.py
+│   ├── vertex_stream.py
+│   └── vertex_r2d2_client.py
 ├── utils/            # Shared utilities
 ├── config.py         # App configuration & Env loading
 ├── main.py           # FastAPI entry point & UI Server
-├── scripts/          # Utility scripts
-│   ├── ingest_docs.py    # Document parsing (PDF/HTML/DOCX)
-│   └── build_index.py    # Vector index creation
+├── tools/            # Utility & Pipeline tools
+│   ├── check_connection.py  # Environment validator
+│   ├── ingest_docs.py       # Document parsing
+│   └── build_index.py       # Vector index creation
 ├── ui/                   # Frontend UI (Vanilla JS/HTML/CSS)
 │   └── index.html        # Main Chat Interface
 ├── data/                 # Local data storage (Git ignored)
-│   ├── source/           # Drop your PDFs/HTML here
-│   ├── interim/          # Extracted text
-│   └── artifacts/        # Search indices
+│   ├── artifacts/        # Search indices / Chunks
+│   └── interim/          # Extracted text
 ├── .env                  # Your local secrets (R2D2, GCP Project)
 ├── requirements.txt      # Python dependencies
 ├── ARCHITECTURE.md       # Technical design overview
@@ -41,7 +44,7 @@ rag-poc/
 ### Verification
 Run the standalone connection check to verify your environment before running the app:
 ```bash
-python check_connection.py
+python tools/check_connection.py
 ```
 
 ---
@@ -74,10 +77,10 @@ Fill in the following values in `.env`:
 ```bash
 # 1. Place your raw files in data/source/
 # 2. Ingest documents (converts to text)
-python scripts/ingest_docs.py --input "data/source"
+python tools/ingest_docs.py --input "data/source"
 
 # 3. Build the search index
-python scripts/build_index.py
+python tools/build_index.py
 ```
 
 ### 4. Run the Application

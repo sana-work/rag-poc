@@ -34,14 +34,14 @@ graph TD
 
 ## 3. Data Flow
 
-1. **Ingestion**: `ingest_docs.py` parses raw documents.
-2. **Indexing**: `build_index.py` creates the vector or TF-IDF search index.
+1. **Ingestion**: `tools/ingest_docs.py` parses raw documents.
+2. **Indexing**: `tools/build_index.py` creates the vector or TF-IDF search index.
 3. **Querying**: 
-   - **Step 1: Intent**: User question is classified (Greeting, Closure, Off-Topic, or Search).
+   - **Step 1: Intent**: User question is classified in `llm/intent_router.py`.
    - **Step 2: Logic**: 
-     - If Greeting/Closure: A polite response is generated (static or LLM).
-     - If Search: Relevant chunks are retrieved via FAISS.
-   - **Step 3: Streaming**: Vertex AI (or static fallback) streams the answer back.
+     - If Greeting/Closure: Response via `llm/vertex_stream.py`.
+     - If Search: Context retrieved via `llm/retrieval/`.
+   - **Step 3: Streaming**: Vertex AI streams the answer back.
 
 ## 4. Security & Authentication
 - **Helix**: Used to obtain ephemeral access tokens.

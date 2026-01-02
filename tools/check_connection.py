@@ -15,8 +15,8 @@ from google.genai.types import HttpOptions, EmbedContentConfig
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# Load env from the same directory as this script
-env_path = Path(__file__).parent / ".env"
+# Load env from the project root
+env_path = Path(__file__).parent.parent / ".env"
 load_dotenv(env_path)
 
 def get_helix_token():

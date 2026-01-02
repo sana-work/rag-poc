@@ -9,7 +9,7 @@ from fastapi.responses import StreamingResponse, JSONResponse
 from config import settings
 from utils.logger import logger
 from utils.redaction import Redactor
-from retrieval.factory import get_retriever
+from llm.retrieval.factory import get_retriever
 
 # Import LLM handlers
 from llm import vertex_stream, none_extractive, intent_router
@@ -65,51 +65,29 @@ async def chat_stream(
     
     async def event_generator():
         try:
-            # 1. Send 'meta' event with citations and intent
-            citations = [
-                {
-                    "id": c.get('chunkId', 'unknown'), 
-                    "title": c.get('meta', {}).get('docTitle', 'Untitled'), 
-                    "score": float(c.get('score', 0))
-                } 
-                for c in chunks
-            ]
+            citations = [{"id": c.get('chunkId', 'unknown'), "title": c.get('meta', {}).get('docTitle', 'Untitled'), "score": float(c.get('score', 0))} for c in chunks]
             yield f"event: meta\ndata: {json.dumps({'citations': citations, 'retrievalMode': settings.RETRIEVAL_MODE, 'intent': intent})}\n\n"
             
-            # 2. Get LLM generator
             full_response = ""
-            
-            # Handle direct resolution intents (GREETING, CLOSURE, OFF_TOPIC)
             if intent in [Intent.GREETING, Intent.CLOSURE, Intent.OFF_TOPIC]:
                 if settings.MODE == "none":
-                    if intent == Intent.GREETING:
-                        full_response = "Hello! I am your local AI assistant. How can I help you explore the OpsUI Application today?"
-                    elif intent == Intent.CLOSURE:
-                        full_response = "You're very welcome! If you have more questions later, feel free to ask. Have a great day!"
-                    else:
-                        full_response = "I'm optimized for technical documentation queries. Please ask about the software or app details!"
+                    static_responses = {Intent.GREETING: "Hello! How can I help you today?", Intent.CLOSURE: "You're welcome! Have a great day!", Intent.OFF_TOPIC: "I'm focused on the technical documentation provided."}
+                    full_response = static_responses.get(intent, "Hello!")
                 else:
                     try:
                         generator = await get_llm_response(settings.MODE, q, chunks, system_instruction)
                         async for token in generator:
                             full_response += token
                             yield f"event: token\ndata: {json.dumps(token)}\n\n"
-                    except Exception as llm_e:
-                        # LLM Fallback for Vertex mode
-                        static_map = {
-                            Intent.GREETING: "Hello! I am your AI assistant. How can I help you today?",
-                            Intent.CLOSURE: "You're welcome! Let me know if you need anything else.",
-                            Intent.OFF_TOPIC: "I'm focused on the technical documentation provided."
-                        }
-                        full_response = static_map.get(intent, "Hello!")
+                    except Exception:
+                        full_response = "Hello! How can I help you today?"
                 
-                if full_response:
+                if full_response and settings.MODE == "none":
                     yield f"event: token\ndata: {json.dumps(full_response)}\n\n"
             
-            # Handle RAG_QUERY
             elif intent == Intent.RAG_QUERY:
                 if not chunks and settings.MODE == "none":
-                    full_response = "I'm sorry, I couldn't find any specific information about that in the documents. Could you please rephrase your question?"
+                    full_response = "I couldn't find specific info in the docs. Please rephrase."
                     yield f"event: token\ndata: {json.dumps(full_response)}\n\n"
                 else:
                     try:
@@ -118,25 +96,18 @@ async def chat_stream(
                             full_response += token
                             yield f"event: token\ndata: {json.dumps(token)}\n\n"
                     except Exception as e:
-                        err_str = str(e)
-                        if "401" in err_str or "403" in err_str:
-                            logger.warning("Auth error. Refreshing token.")
+                        if any(err in str(e) for err in ["401", "403"]):
                             from llm.vertex_r2d2_client import VertexR2D2Client
                             VertexR2D2Client.refresh_on_error()
                             yield f"event: token\ndata: {json.dumps('[Auth Error: Token refreshed, please retry]')}\n\n"
                         else:
-                            yield f"event: token\ndata: {json.dumps(f'[Error: {err_str}]')}\n\n"
-                
-            # 3. Log completion and send 'done'
+                            yield f"event: token\ndata: {json.dumps(f'[Error: {str(e)}]')}\n\n"
+            
             latency = time.time() - start_time
-            log_data['latency'] = latency
-            log_data['response_length'] = len(full_response)
-            logger.info("Chat Request Completed", extra={"structured_data": log_data})
-            
+            logger.info("Chat Completed", extra={"structured_data": {**log_data, "latency": latency, "length": len(full_response)}})
             yield f"event: done\ndata: {json.dumps({'latency': latency})}\n\n"
-            
         except Exception as e:
-            logger.error(f"Event generator crash: {e}")
+            logger.error(f"SSE Error: {e}")
             yield f"event: done\ndata: {{}}\n\n"
 
     return StreamingResponse(
