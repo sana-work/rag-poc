@@ -3,8 +3,8 @@ import logging
 import re
 from typing import List, Dict, Any, Set
 from pathlib import Path
-from app.config import settings
-from app.retrieval.base import BaseRetriever
+from config import settings
+from retrieval.base import BaseRetriever
 
 logger = logging.getLogger(__name__)
 

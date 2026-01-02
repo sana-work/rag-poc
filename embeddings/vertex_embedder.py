@@ -1,8 +1,8 @@
 import logging
 import time
 from typing import List
-from app.config import settings
-from app.llm.vertex_r2d2_client import VertexR2D2Client
+from config import settings
+from llm.vertex_r2d2_client import VertexR2D2Client
 from google.genai.types import EmbedContentConfig
 
 logger = logging.getLogger(__name__)

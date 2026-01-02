@@ -6,14 +6,14 @@ A simplified, enterprise-ready RAG (Retrieval Augmented Generation) system. This
 
 ```text
 rag-poc/
-├── app/                  # Application source code
-│   ├── api/              # API endpoints (Streaming, Health)
-│   ├── embeddings/       # Vertex AI Embedding logic
-│   ├── llm/              # Vertex AI Generation & R2D2/Helix Auth
-│   ├── retrieval/        # FAISS & TF-IDF search logic
-│   ├── config.py         # App configuration & Env loading
-│   └── main.py           # FastAPI entry point & UI Server
-├── scripts/              # Utility scripts
+├── api/              # API endpoints (Streaming, Health)
+├── embeddings/       # Vertex AI Embedding logic
+├── llm/              # Vertex AI Generation & R2D2/Helix Auth
+├── retrieval/        # FAISS & TF-IDF search logic
+├── utils/            # Shared utilities
+├── config.py         # App configuration & Env loading
+├── main.py           # FastAPI entry point & UI Server
+├── scripts/          # Utility scripts
 │   ├── ingest_docs.py    # Document parsing (PDF/HTML/DOCX)
 │   └── build_index.py    # Vector index creation
 ├── ui/                   # Frontend UI (Vanilla JS/HTML/CSS)
@@ -82,7 +82,7 @@ python scripts/build_index.py
 
 ### 4. Run the Application
 ```bash
-python -m uvicorn app.main:app --reload
+python -m uvicorn main:app --reload
 ```
 Open your browser at: **[http://localhost:8000/](http://localhost:8000/)**
 

@@ -6,13 +6,13 @@ import json
 import logging
 from typing import List
 
-# Setup robust path handling - MUST be before importing from 'app'
+# Setup robust path handling - MUST be before importing project modules
 BASE_DIR = Path(__file__).parent.parent
 if str(BASE_DIR) not in sys.path:
     sys.path.append(str(BASE_DIR))
 
 # Import project modules
-from app.config import settings
+from config import settings
 
 # Import third-party parsers
 from pypdf import PdfReader
