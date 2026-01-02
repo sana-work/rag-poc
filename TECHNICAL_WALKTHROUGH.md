@@ -1,5 +1,3 @@
-![GenAI RAG PoC Logo](docs/logo.png)
-
 # Project Walkthrough: Informational RAG PoC
 
 Welcome to the **Informational RAG (Retrieval-Augmented Generation) Proof of Concept**. This document serves as a comprehensive technical guide for new users and developers to understand the application's purpose, architecture, and request lifecycle.
