@@ -2,7 +2,6 @@ import json
 import logging
 import re
 from typing import List, Dict, Any, Set
-from pathlib import Path
 from config import settings
 from llm.retrieval.base import BaseRetriever
 

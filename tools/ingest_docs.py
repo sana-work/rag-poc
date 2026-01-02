@@ -1,10 +1,8 @@
-import os
 import argparse
 import sys
 from pathlib import Path
 import json
 import logging
-from typing import List
 
 # Setup robust path handling - MUST be before importing project modules
 BASE_DIR = Path(__file__).parent.parent

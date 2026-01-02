@@ -1,6 +1,4 @@
 import logging
-import json
-import time
 from config import settings
 from llm.vertex_r2d2_client import VertexR2D2Client
 from google.genai import types

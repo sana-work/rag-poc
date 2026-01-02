@@ -1,5 +1,4 @@
 import logging
-import os
 from config import settings
 from llm.retrieval.base import BaseRetriever
 from llm.retrieval.retriever_tfidf import TfidfRetriever

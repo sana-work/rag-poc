@@ -1,5 +1,4 @@
 import logging
-import json
 import re
 from google.genai import types
 from config import settings

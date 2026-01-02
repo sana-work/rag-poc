@@ -1,5 +1,4 @@
 from typing import List, Dict
-import re
 
 class TextChunker:
     def __init__(self, chunk_size: int = 1000, overlap: int = 200):

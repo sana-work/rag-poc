@@ -48,13 +48,6 @@ class VertexR2D2Client:
         except Exception as e:
             logger.error(f"Helix token failed: {e}")
             raise
-            
-        except subprocess.CalledProcessError as e:
-            logger.error(f"Helix command failed: {e}")
-            raise RuntimeError("Failed to obtain Helix token") from e
-        except Exception as e:
-            logger.error(f"Error refreshing token: {e}")
-            raise
 
     @classmethod
     def _create_client(cls):
