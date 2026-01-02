@@ -89,7 +89,7 @@ class VertexR2D2Client:
             headers[settings.R2D2_SOEID_HEADER] = settings.R2D2_SOEID
 
         # Use google.oauth2.credentials.Credentials to wrap the raw token
-        creds = credentials.Credentials(cls._token)
+        creds = Credentials(cls._token)
 
         cls._client = Client(
             vertexai=True,
