@@ -4,7 +4,7 @@ import subprocess
 import logging
 from typing import Optional
 from google.genai import Client
-from google.oauth2 import credentials
+from google.oauth2.credentials import Cedentials
 from google.genai.types import HttpOptions
 from app.config import settings
 

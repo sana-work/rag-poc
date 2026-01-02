@@ -50,6 +50,12 @@ def check_connection_and_search():
     project_id = os.getenv("GOOGLE_CLOUD_PROJECT")
     location = os.getenv("GOOGLE_CLOUD_LOCATION")
     
+    # SSL Cert handling from reference
+    ssl_cert = os.getenv("SSL_CERT_FILE")
+    if ssl_cert:
+        os.environ["SSL_CERT_FILE"] = ssl_cert
+        logger.info(f"Set SSL_CERT_FILE to: {ssl_cert}")
+
     if not r2d2_url or not project_id or not location:
         logger.error("Missing required env vars: R2D2_VERTEX_BASE_URL, GOOGLE_CLOUD_PROJECT, or GOOGLE_CLOUD_LOCATION")
         return
@@ -85,6 +91,7 @@ def check_connection_and_search():
                 headers=headers
             )
         )
+        logger.info("Vertex Client initialized. Attempting to verify connection with embedding generation...")
         
         # Generate Embedding
         test_text = "This is a standalone connection test."
