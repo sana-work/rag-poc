@@ -64,13 +64,27 @@ async def chat_stream(
     
     async def event_generator():
         try:
-            citations = [{"id": c.get('chunkId', 'unknown'), "title": c.get('meta', {}).get('docTitle', 'Untitled'), "score": float(c.get('score', 0))} for c in chunks]
+            # Prepare unique citations list
+            unique_citations = {}
+            for c in chunks:
+                title = c.get('meta', {}).get('docTitle', 'Untitled')
+                if title not in unique_citations:
+                    unique_citations[title] = {
+                        "id": c.get('chunkId', 'unknown'),
+                        "title": title,
+                        "score": float(c.get('score', 0))
+                    }
+            citations = list(unique_citations.values())
             yield f"event: meta\ndata: {json.dumps({'citations': citations, 'retrievalMode': settings.RETRIEVAL_MODE, 'intent': intent})}\n\n"
             
             full_response = ""
             if intent in [Intent.GREETING, Intent.CLOSURE, Intent.OFF_TOPIC]:
                 if settings.MODE == "none":
-                    static_responses = {Intent.GREETING: "Hello! How can I help you today?", Intent.CLOSURE: "You're welcome! Have a great day!", Intent.OFF_TOPIC: "I'm focused on the technical documentation provided."}
+                    static_responses = {
+                        Intent.GREETING: "Hello! I am your AI assistant. How can I help you explore the document repository today?",
+                        Intent.CLOSURE: "You're very welcome! Have a great day! Let me know if you need anything else.",
+                        Intent.OFF_TOPIC: "I'm optimized for technical documentation queries. Please ask questions about the uploaded files!"
+                    }
                     full_response = static_responses.get(intent, "Hello!")
                 else:
                     try:
@@ -86,7 +100,7 @@ async def chat_stream(
             
             elif intent == Intent.RAG_QUERY:
                 if not chunks and settings.MODE == "none":
-                    full_response = "I couldn't find specific info in the docs. Please rephrase."
+                    full_response = "I'm sorry, I couldn't find any relevant information in the uploaded documents to answer your question."
                     yield f"event: token\ndata: {json.dumps(full_response)}\n\n"
                 else:
                     try:
@@ -156,12 +170,12 @@ async def chat_post(
     # Handle direct resolution intents (GREETING, CLOSURE, OFF_TOPIC)
     if intent in [Intent.GREETING, Intent.CLOSURE, Intent.OFF_TOPIC]:
         if settings.MODE == "none":
-            if intent == Intent.GREETING:
-                full_response = "Hello! I am your local AI assistant. How can I help you explore the OpsUI Application today?"
-            elif intent == Intent.CLOSURE:
-                full_response = "You're very welcome! Have a great day!"
-            else:
-                full_response = "I'm optimized for technical documentation queries. Please ask about the software!"
+            static_responses = {
+                Intent.GREETING: "Hello! I am your AI assistant. How can I help you explore the document repository today?",
+                Intent.CLOSURE: "You're very welcome! Have a great day! Let me know if you need anything else.",
+                Intent.OFF_TOPIC: "I'm optimized for technical documentation queries. Please ask questions about the uploaded files!"
+            }
+            full_response = static_responses.get(intent, "Hello!")
         else:
             try:
                 generator = await get_llm_response(settings.MODE, q, chunks, system_instruction)
@@ -179,7 +193,7 @@ async def chat_post(
     # Handle RAG_QUERY
     elif intent == Intent.RAG_QUERY:
         if not chunks and settings.MODE == "none":
-            full_response = "I'm sorry, I couldn't find any specific information about that in the documents."
+            full_response = "I'm sorry, I couldn't find any relevant information in the uploaded documents to answer your question."
         else:
             try:
                 generator = await get_llm_response(settings.MODE, q, chunks, system_instruction)
@@ -205,9 +219,12 @@ async def chat_post(
     return JSONResponse({
         "answer": full_response,
         "intent": intent,
-        "citations": [
-            {"id": c['chunkId'], "title": c['meta'].get('docTitle'), "score": c.get('score')} 
-            for c in chunks
-        ],
+        "citations": list({
+            c['meta'].get('docTitle', 'Untitled'): {
+                "id": c['chunkId'], 
+                "title": c['meta'].get('docTitle', 'Untitled'), 
+                "score": c.get('score')
+            } for c in chunks
+        }.values()),
         "latency": latency
     })

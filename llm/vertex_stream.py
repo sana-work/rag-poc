@@ -10,15 +10,24 @@ async def generate_response_stream(query: str, context_chunks: list, system_inst
     Streams raw tokens from Vertex AI Gemini using R2D2 client.
     """
     
-    # Construct prompt
-    context_text = "\n\n".join([c.get('text', '') for c in context_chunks])
+    # Construct labeled context
+    context_parts = []
+    for i, c in enumerate(context_chunks, 1):
+        title = c.get('meta', {}).get('docTitle', 'Unknown Document')
+        context_parts.append(f"--- SOURCE {i} ({title}) ---\n{c.get('text', '')}")
+    
+    context_text = "\n\n".join(context_parts)
     
     # Default instruction if none provided
     if not system_instruction:
         system_instruction = (
-            "You are a helpful AI assistant. "
-            "Answer the user's question using ONLY the context provided below. "
-            "If the context does not contain the answer, say 'I cannot find the answer in the provided documents'.\n"
+            "You are a helpful AI assistant specializing in technical documentation.\n\n"
+            "Answer the user's question accurately using ONLY the context provided below. "
+            "If the context does not contain the answer, say 'I'm sorry, but I couldn't find information about that in the current documents.'\n\n"
+            "Formatting Rules:\n\n"
+            "1. Use clear Markdown: bold key terms, use bullet points, and ensure high readability.\n"
+            "2. If you use information from a specific SOURCE, mention it in your answer (e.g., 'According to Source 1...').\n"
+            "3. Keep the tone professional but user-friendly."
         )
 
     prompt = f"""
