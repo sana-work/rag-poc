@@ -6,7 +6,7 @@ from typing import Optional
 from google.genai import Client
 from google.oauth2.credentials import Credentials
 from google.genai.types import HttpOptions
-from app.config import settings
+from config import settings
 
 logger = logging.getLogger(__name__)
 
