@@ -6,14 +6,14 @@ from typing import Optional
 from fastapi import APIRouter, Request, Query
 from fastapi.responses import StreamingResponse, JSONResponse
 
-from config import settings
-from utils.logger import logger
-from utils.redaction import Redactor
-from retrieval.factory import get_retriever
+from app.config import settings
+from app.utils.logger import logger
+from app.utils.redaction import Redactor
+from app.retrieval.factory import get_retriever
 
 # Import LLM handlers
-from llm import vertex_stream, none_extractive, intent_router
-from llm.intent_router import Intent
+from app.llm import vertex_stream, none_extractive, intent_router
+from app.llm.intent_router import Intent
 
 router = APIRouter()
 
@@ -121,7 +121,7 @@ async def chat_stream(
                         err_str = str(e)
                         if "401" in err_str or "403" in err_str:
                             logger.warning("Auth error. Refreshing token.")
-                            from llm.vertex_r2d2_client import VertexR2D2Client
+                            from app.llm.vertex_r2d2_client import VertexR2D2Client
                             VertexR2D2Client.refresh_on_error()
                             yield f"event: token\ndata: {json.dumps('[Auth Error: Token refreshed, please retry]')}\n\n"
                         else:

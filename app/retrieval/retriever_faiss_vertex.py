@@ -4,8 +4,8 @@ import faiss
 import numpy as np
 from typing import List, Dict
 from pathlib import Path
-from embeddings.vertex_embedder import VertexEmbedder
-from retrieval.base import BaseRetriever
+from app.embeddings.vertex_embedder import VertexEmbedder
+from app.retrieval.base import BaseRetriever
 
 logger = logging.getLogger(__name__)
 

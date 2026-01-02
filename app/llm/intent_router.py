@@ -2,8 +2,8 @@ import logging
 import json
 import re
 from google.genai import types
-from config import settings
-from llm.vertex_r2d2_client import VertexR2D2Client
+from app.config import settings
+from app.llm.vertex_r2d2_client import VertexR2D2Client
 
 logger = logging.getLogger(__name__)
 

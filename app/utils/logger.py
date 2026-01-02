@@ -3,8 +3,8 @@ import json
 import uuid
 import time
 from pathlib import Path
-from config import settings
-from utils.redaction import redact_log_data
+from app.config import settings
+from app.utils.redaction import redact_log_data
 
 class JSONFormatter(logging.Formatter):
     def format(self, record):
