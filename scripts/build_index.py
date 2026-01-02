@@ -7,12 +7,12 @@ import logging
 from pathlib import Path
 from typing import List, Dict
 
-# Add backend to path to import root modules
+# Add backend to path to import app modules
 sys.path.append(str(Path(__file__).parent.parent))
 
-from config import settings
+from app.config import settings
 # Import the new Vertex Embedder
-from embeddings.vertex_embedder import VertexEmbedder
+from app.embeddings.vertex_embedder import VertexEmbedder
 import numpy as np
 import faiss
 
@@ -44,7 +44,7 @@ def build_index():
     # Previous implementation of ingest_docs.py does NOT create chunks.jsonl, build_index.py DOES.
     # So we need to read from data/interim/*.txt and chunk them first.
     
-    from utils.text_chunker import TextChunker
+    from app.utils.text_chunker import TextChunker
     chunker = TextChunker(chunk_size=settings.CHUNK_SIZE, overlap=settings.CHUNK_OVERLAP)
     
     all_chunks = []
