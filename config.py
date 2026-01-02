@@ -2,12 +2,12 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 
-env_path = Path(__file__).parent.parent / ".env"
+env_path = Path(__file__).parent / ".env"
 load_dotenv(env_path)
 
 class Settings:
     # Project Paths
-    BASE_DIR = Path(__file__).parent.parent.resolve()
+    BASE_DIR = Path(__file__).parent.resolve()
     DATA_DIR = (BASE_DIR / "data").resolve()
     LOGS_DIR = (BASE_DIR / "logs").resolve()
     

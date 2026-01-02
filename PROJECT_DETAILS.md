@@ -6,12 +6,12 @@ This document explains exactly how the code is organized and how data flows thro
 
 ## 1. Directory & File Map
 
-### 📂 `app/` (The Core Engine)
+### 📂 Root Directory (The Core Engine)
 This directory contains the logic that runs while the server is active.
 
 *   **`main.py`**: The entry point. It starts the FastAPI server, configures security (CORS), and tells the server where to find the UI files (`ui/index.html`).
-*   **`config.py`**: The "Settings" hub. It reads the `.env` file and shares configurations (like model names, SOEIDs, and folder paths) with the rest of the app.
-*   **`api/routes.py`**: The "Traffic Controller". It handles the URL endpoints (like `/chat/stream`). When a user asks a question, this file coordinates the retrieval and the LLM generation.
+*   **`config.py`**: The "Settings" hub. It reads the `.env` file and shares configurations (like model names, so-eids, and folder paths) with the rest of the app.
+*   **`api/`**: Contains `routes.py`, the "Traffic Controller". It handles the URL endpoints (like `/chat/stream`). When a user asks a question, this file coordinates the retrieval and the LLM generation.
 *   **`llm/`**:
     *   **`intent_router.py`**: The "Traffic Cop". It uses regex patterns and Vertex AI to classify the user's intent (e.g., Greeting, Goodbye, Search) and routes the request accordingly.
     *   **`vertex_r2d2_client.py`**: The "Bouncer". It manages authentication with Helix, fetches the access token, and sets up the secure R2D2 connection to Google.
@@ -21,6 +21,8 @@ This directory contains the logic that runs while the server is active.
     *   **`factory.py`**: The "Selector". It decides whether to use FAISS (Vector search) or TF-IDF based on what's available.
     *   **`retriever_faiss_vertex.py`**: The "Search Engine". It searches the vector database to find the most relevant documents.
 *   **`embeddings/vertex_embedder.py`**: The "Translator". It turns human words into the mathematical "Vectors" used for search.
+*   **`utils/`**: Shared utilities like `logger.py` and `redaction.py`.
+*   **`check_connection.py`**: A standalone script to verify connectivity to Vertex AI/R2D2 and check FAISS installation before running the main app.
 
 ### 📂 `scripts/` (The Tools)
 These are run manually to prepare your data.
