@@ -73,6 +73,9 @@ class VertexR2D2Client:
             raise ValueError("No access token available")
         if not settings.R2D2_VERTEX_BASE_URL:
             raise ValueError("R2D2_VERTEX_BASE_URL not configured")
+        if "<" in settings.R2D2_VERTEX_BASE_URL or ">" in settings.R2D2_VERTEX_BASE_URL:
+            raise ValueError(f"R2D2_VERTEX_BASE_URL contains placeholder characters: {settings.R2D2_VERTEX_BASE_URL}. Please update your .env file with the actual host.")
+            
         if not settings.GOOGLE_CLOUD_PROJECT:
             raise ValueError("GOOGLE_CLOUD_PROJECT not configured")
         if not settings.GOOGLE_CLOUD_LOCATION:
