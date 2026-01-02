@@ -8,7 +8,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 from google.genai import Client
-from google.oauth2 import credentials
+from google.oauth2.credentials import Credentials
 from google.genai.types import HttpOptions, EmbedContentConfig
 
 # Setup logging
@@ -70,7 +70,7 @@ def check_connection_and_search():
     try:
         # Get Token
         token = get_helix_token()
-        creds = credentials.Credentials(token)
+        creds = Credentials(token)
         
         # Prepare Headers
         headers = {}

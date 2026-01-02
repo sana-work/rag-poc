@@ -38,6 +38,12 @@ rag-poc/
     - Active session via `helix auth login`.
     - Access to a Vertex AI project via R2D2.
 
+### Verification
+Run the standalone connection check to verify your environment before running the app:
+```bash
+python check_connection.py
+```
+
 ---
 
 ## Setup & Running

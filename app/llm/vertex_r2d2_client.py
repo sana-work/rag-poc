@@ -4,7 +4,7 @@ import subprocess
 import logging
 from typing import Optional
 from google.genai import Client
-from google.oauth2.credentials import Cedentials
+from google.oauth2.credentials import Credentials
 from google.genai.types import HttpOptions
 from app.config import settings
 
@@ -73,7 +73,7 @@ class VertexR2D2Client:
             raise ValueError("No access token available")
         if not settings.R2D2_VERTEX_BASE_URL:
             raise ValueError("R2D2_VERTEX_BASE_URL not configured")
-        if "<" in settings.R2D2_VERTEX_BASE_URL or ">" in settings.R2D2_VERTEX_BASE_URL:
+        if settings.R2D2_VERTEX_BASE_URL and ("<" in settings.R2D2_VERTEX_BASE_URL or ">" in settings.R2D2_VERTEX_BASE_URL):
             raise ValueError(f"R2D2_VERTEX_BASE_URL contains placeholder characters: {settings.R2D2_VERTEX_BASE_URL}. Please update your .env file with the actual host.")
             
         if not settings.GOOGLE_CLOUD_PROJECT:
@@ -83,11 +83,13 @@ class VertexR2D2Client:
 
         logger.info(f"Creating R2D2 Vertex Client for project {settings.GOOGLE_CLOUD_PROJECT}")
         
-        # Headers for R2D2
+        # Headers for R2D2 - Matching check_connection.py logic
+        # Allow R2D2_SOEID to override USER if explicitly set, otherwise default to USER
         headers = {}
-        if settings.R2D2_SOEID_HEADER and settings.R2D2_SOEID:
-            headers[settings.R2D2_SOEID_HEADER] = settings.R2D2_SOEID
-
+        soe_id = settings.R2D2_SOEID or os.getenv("USER", "")
+        if soe_id:
+             headers["x-r2d2-soeid"] = soe_id
+        
         # Use google.oauth2.credentials.Credentials to wrap the raw token
         creds = Credentials(cls._token)
 
