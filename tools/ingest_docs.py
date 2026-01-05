@@ -3,6 +3,8 @@ import sys
 from pathlib import Path
 import json
 import logging
+import hashlib
+from typing import Set, Dict
 
 # Setup robust path handling - MUST be before importing project modules
 BASE_DIR = Path(__file__).parent.parent
@@ -72,11 +74,24 @@ def ingest_docs(input_dir: str, output_dir: str):
     
     count = 0
     skipped = 0
+    duplicates_filename = 0
+    duplicates_content = 0
     total_files = 0
+    
+    seen_filenames: Set[str] = set()
+    seen_hashes: Dict[str, str] = {} # hash -> original_filename
     
     for file_path in input_path.rglob('*'):
         if file_path.is_file():
             total_files += 1
+            
+            # 1. Filename Duplicate Check (Case-insensitive)
+            filename_lower = file_path.name.lower()
+            if filename_lower in seen_filenames:
+                logger.warning(f"Skipping duplicate filename: {file_path.name}")
+                duplicates_filename += 1
+                continue
+                
             if file_path.suffix.lower() in supported_extensions:
                 parser = supported_extensions[file_path.suffix.lower()]
                 logger.info(f"Processing {file_path.name}...")
@@ -85,6 +100,16 @@ def ingest_docs(input_dir: str, output_dir: str):
                 if text:
                     # Normalize whitespace
                     text = " ".join(text.split())
+                    
+                    # 2. Content Duplicate Check (Hash)
+                    content_hash = hashlib.sha256(text.encode('utf-8')).hexdigest()
+                    if content_hash in seen_hashes:
+                        logger.warning(f"Skipping duplicate content: {file_path.name} (identical to {seen_hashes[content_hash]})")
+                        duplicates_content += 1
+                        continue
+                    
+                    seen_filenames.add(filename_lower)
+                    seen_hashes[content_hash] = file_path.name
                     
                     doc_id = file_path.stem
                     output_file = output_path / f"{doc_id}.txt"
@@ -98,7 +123,8 @@ def ingest_docs(input_dir: str, output_dir: str):
                         json.dump({
                             "sourcePath": str(file_path),
                             "docTitle": file_path.name,
-                            "docId": doc_id
+                            "docId": doc_id,
+                            "contentHash": content_hash
                         }, f)
                     
                     count += 1
@@ -110,6 +136,11 @@ def ingest_docs(input_dir: str, output_dir: str):
                 
     logger.info(f"Found {total_files} total files in {input_path}")
     logger.info(f"Ingested {count} documents to {output_path}")
+    if duplicates_filename > 0:
+        logger.info(f"Skipped {duplicates_filename} files with duplicate names")
+    if duplicates_content > 0:
+        logger.info(f"Skipped {duplicates_content} files with duplicate content")
+    
     if total_files > 0 and count == 0:
         logger.warning(f"Found {total_files} files but ingested 0. Ensure files have extensions: {list(supported_extensions.keys())}")
 

@@ -33,7 +33,7 @@ class FaissVertexRetriever(BaseRetriever):
         if self.index.ntotal != len(self.chunks):
             logger.warning(f"Index size ({self.index.ntotal}) does not match chunks size ({len(self.chunks)})")
 
-    def retrieve(self, query: str, k: int = 3) -> List[Dict]:
+    def retrieve(self, query: str, top_k: int = 3) -> List[Dict]:
         if not self.index:
             return []
             
@@ -47,7 +47,7 @@ class FaissVertexRetriever(BaseRetriever):
             faiss.normalize_L2(q_emb_np)
             
             # Search
-            scores, indices = self.index.search(q_emb_np, k)
+            scores, indices = self.index.search(q_emb_np, top_k)
             
             results = []
             for score, idx in zip(scores[0], indices[0]):

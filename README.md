@@ -72,7 +72,7 @@ Fill in the following values in `.env`:
 - `R2D2_VERTEX_BASE_URL`
 - `R2D2_SOEID`
 - `GOOGLE_CLOUD_PROJECT`
-- `SSL_CERT_FILE` (if on corporate network)
+- `SSL_CERT_FILE` 
 
 ### 3. Prepare Data
 ```bash
