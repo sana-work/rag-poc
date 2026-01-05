@@ -12,7 +12,7 @@ class VertexEmbedder:
         self.model = settings.VERTEX_EMBEDDING_MODEL
         self.retry_count = settings.EMBED_RETRY
 
-    def embed_texts(self, texts: List[str]) -> List[List[float]]:
+    def embed_texts(self, texts: List[str], task_type: str = "RETRIEVAL_DOCUMENT") -> List[List[float]]:
         """
         Embeds a list of texts using Vertex AI via R2D2 using adaptive batching.
         """
@@ -22,14 +22,14 @@ class VertexEmbedder:
         for i in range(0, len(texts), batch_size):
             batch = texts[i : i + batch_size]
             try:
-                batch_embeddings = self._embed_batch_with_retry(batch)
+                batch_embeddings = self._embed_batch_with_retry(batch, task_type=task_type)
                 results.extend(batch_embeddings)
             except Exception as e:
                 logger.error(f"Batch embedding failed: {e}. Falling back to sequential embedding.")
                 # Fallback: Sequential
                 for text in batch:
                     try:
-                        single_res = self._embed_batch_with_retry([text])
+                        single_res = self._embed_batch_with_retry([text], task_type=task_type)
                         results.extend(single_res)
                     except Exception as inner_e:
                         logger.error(f"Single embedding failed for text snippet: {inner_e}")
@@ -40,9 +40,9 @@ class VertexEmbedder:
 
     def embed_query(self, text: str) -> List[float]:
         """Embeds a single query string."""
-        return self.embed_texts([text])[0]
+        return self.embed_texts([text], task_type="RETRIEVAL_QUERY")[0]
 
-    def _embed_batch_with_retry(self, texts: List[str]) -> List[List[float]]:
+    def _embed_batch_with_retry(self, texts: List[str], task_type: str = "RETRIEVAL_DOCUMENT") -> List[List[float]]:
         """Helpers to call the API with retry logic for 401/429."""
         client = VertexR2D2Client.get_client()
         
@@ -51,7 +51,7 @@ class VertexEmbedder:
                 response = client.models.embed_content(
                     model=self.model,
                     contents=texts,
-                    config=EmbedContentConfig(task_type="RETRIEVAL_DOCUMENT") # Adjust based on use-case
+                    config=EmbedContentConfig(task_type=task_type) # Optimized based on use-case
                 )
                 # response.embeddings is a list of ContentEmbedding objects
                 return [e.values for e in response.embeddings]
