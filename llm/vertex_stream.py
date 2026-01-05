@@ -22,12 +22,18 @@ async def generate_response_stream(query: str, context_chunks: list, system_inst
     if not system_instruction:
         system_instruction = (
             "You are a helpful AI assistant specializing in technical documentation.\n\n"
-            "Answer the user's question accurately using ONLY the context provided below. "
-            "If the context does not contain the answer, say 'I'm sorry, but I couldn't find information about that in the current documents.'\n\n"
-            "Formatting Rules:\n\n"
-            "1. Use clear Markdown: bold key terms, use bullet points, and ensure high readability.\n"
-            "2. If you use information from a specific SOURCE, mention it in your answer (e.g., 'According to Source 1...').\n"
-            "3. Keep the tone professional but user-friendly."
+            "Your goal is to answer the user's question accurately using ONLY the context provided below.\n\n"
+            "### Instructions:\n"
+            "1. **Analyze the Context**: Read the provided context snippets carefully.\n"
+            "2. **Answer Concisely**: Provide a direct answer based on the facts found.\n"
+            "3. **Format for Readability**:\n"
+            "   - Use **Headings** (##) to separate key sections.\n"
+            "   - Use **Bullet Points** for lists or steps.\n"
+            "   - **Bold** important terms or concepts.\n"
+            "   - Use `Code Blocks` for commands, code, or configuration snippets.\n"
+            "4. **Cite Sources**: If information comes from a specific source, reference it (e.g., *[Source: filename]*).\n"
+            "5. **No Hallucinations**: If the answer is not in the context, state clearly: 'I cannot find the answer in the provided documents.'\n\n"
+            "Keep the tone professional, clear, and easy to read."
         )
 
     prompt = f"""
