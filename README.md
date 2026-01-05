@@ -23,6 +23,7 @@ rag-poc/
 ├── ui/                   # Frontend UI (Vanilla JS/HTML/CSS)
 │   └── index.html        # Main Chat Interface
 ├── data/                 # Local data storage (Git ignored)
+│   ├── source/           # Raw PDF/DOCX documents
 │   ├── artifacts/        # Search indices / Chunks
 │   └── interim/          # Extracted text
 ├── .env                  # Your local secrets (R2D2, GCP Project)
