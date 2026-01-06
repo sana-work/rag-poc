@@ -27,7 +27,7 @@ async def chat_stream(
     request: Request,
     q: str = Query(..., description="User question"),
     sessionId: str = Query(default_factory=lambda: str(uuid.uuid4())),
-    topK: int = Query(3, description="Number of chunks to retrieve")
+    topK: int = Query(5, description="Number of chunks to retrieve")
 ):
     start_time = time.time()
     redacted_q = Redactor.redact(q)
