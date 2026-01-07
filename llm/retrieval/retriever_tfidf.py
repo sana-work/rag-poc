@@ -9,20 +9,25 @@ from sklearn.metrics.pairwise import cosine_similarity
 logger = logging.getLogger(__name__)
 
 class TfidfRetriever(BaseRetriever):
-    def __init__(self):
+    def __init__(self, pkl_path: Any = None, chunks_path: Any = None):
         try:
             artifacts_dir = settings.DATA_DIR / "artifacts"
             
-            with open(artifacts_dir / "tfidf.pkl", "rb") as f:
+            # Default paths if not provided
+            if not pkl_path:
+                pkl_path = artifacts_dir / "tfidf.pkl"
+            if not chunks_path:
+                chunks_path = artifacts_dir / "chunks.jsonl"
+            
+            with open(pkl_path, "rb") as f:
                 self.vectorizer, self.tfidf_matrix = pickle.load(f)
                 
-            chunks_path = artifacts_dir / "chunks.jsonl"
             self.chunks = []
             with open(chunks_path, 'r', encoding='utf-8') as f:
                 for line in f:
                     self.chunks.append(json.loads(line))
                     
-            logger.info(f"TfidfRetriever initialized with {len(self.chunks)} chunks.")
+            logger.info(f"TfidfRetriever initialized from {pkl_path}")
         except Exception as e:
             logger.error(f"Failed to initialize TfidfRetriever: {e}")
             raise e

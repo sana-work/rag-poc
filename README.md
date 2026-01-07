@@ -12,20 +12,23 @@ rag-poc/
 │   ├── retrieval/    # FAISS & TF-IDF search logic
 │   ├── intent_router.py
 │   ├── vertex_stream.py
-│   └── vertex_r2d2_client.py
+│   ├── vertex_r2d2_client.py
+│   └── factory.py    # Retriever instantiation logic
 ├── utils/            # Shared utilities
 ├── config.py         # App configuration & Env loading
 ├── main.py           # FastAPI entry point & UI Server
 ├── tools/            # Utility & Pipeline tools
 │   ├── check_connection.py  # Environment validator
-│   ├── ingest_docs.py       # Document parsing
-│   └── build_index.py       # Vector index creation
+│   ├── ingest_docs.py       # Document parsing (Multi-Corpus)
+│   └── build_index.py       # Vector index creation (Multi-Corpus)
 ├── ui/                   # Frontend UI (Vanilla JS/HTML/CSS)
-│   └── index.html        # Main Chat Interface
+│   └── index.html        # Main Chat Interface (with User/Dev Toggle)
 ├── data/                 # Local data storage (Git ignored)
-│   ├── source/           # Raw PDF/DOCX documents
+│   ├── source/           # Raw documents
+│   │   ├── user/         # "User" corpus source files
+│   │   └── developer/    # "Developer" corpus source files
 │   ├── artifacts/        # Search indices / Chunks
-│   └── interim/          # Extracted text
+│   └── interim/          # Extracted text (Split by corpus)
 ├── .env                  # Your local secrets (R2D2, GCP Project)
 ├── requirements.txt      # Python dependencies
 ├── ARCHITECTURE.md       # Technical design overview
@@ -76,11 +79,14 @@ Fill in the following values in `.env`:
 
 ### 3. Prepare Data
 ```bash
-# 1. Place your raw files in data/source/
-# 2. Ingest documents (converts to text)
-python tools/ingest_docs.py --input "data/source"
+# 1. Place your raw files in:
+#    - data/source/user/ (for general users)
+#    - data/source/developer/ (for technical docs)
 
-# 3. Build the search index
+# 2. Ingest documents (processes both corpora automatically)
+python tools/ingest_docs.py
+
+# 3. Build the search indexes (builds both User and Developer indices)
 python tools/build_index.py
 ```
 
@@ -94,10 +100,13 @@ Open your browser at: **[http://localhost:8000/](http://localhost:8000/)**
 
 ## Key Features
 - **Streaming UI**: Dynamic responses via Server-Sent Events (SSE).
+- **Multi-Corpus Support**:
+    - **User Mode**: Friendly, non-technical explanations grounded in user docs.
+    - **Developer Mode**: Precise, technical answers from developer documentation.
 - **Advanced Intent Detection**: 
     - **`GREETING`**: Warm welcomes.
-    - **`CLOSURE`**: Detects goodbyes and thanks (e.g., "Bye", "Thanks").
-    - **`OFF_TOPIC`**: Keeps the conversation focused on docs.
+    - **`CLOSURE`**: Detects goodbyes and thanks.
+    - **`OFF_TOPIC`**: Keeps the conversation focused.
     - **`RAG_QUERY`**: Specialized search across your PDFs.
 - **Hybrid Security**: Integrated Helix token refresh and R2D2 gateway routing.
 - **Operating Modes**:

@@ -37,8 +37,29 @@ class Settings:
     CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", "1000"))
     CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", "200"))
     
+    # Multi-Corpus Paths
+    SOURCE_DIR_USER = (DATA_DIR / "source" / "user").resolve()
+    SOURCE_DIR_DEV = (DATA_DIR / "source" / "developer").resolve()
+    
+    ARTIFACTS_DIR = (DATA_DIR / "artifacts").resolve()
+    
+    # Default artifacts (legacy support or default fallback)
+    INDEX_PATH = ARTIFACTS_DIR / "faiss.index"
+    CHUNKS_PATH = ARTIFACTS_DIR / "chunks.jsonl"
+
+    # User Corpus Artifacts
+    INDEX_PATH_USER = ARTIFACTS_DIR / "faiss_user.index"
+    CHUNKS_PATH_USER = ARTIFACTS_DIR / "chunks_user.jsonl"
+
+    # Developer Corpus Artifacts
+    INDEX_PATH_DEV = ARTIFACTS_DIR / "faiss_dev.index"
+    CHUNKS_PATH_DEV = ARTIFACTS_DIR / "chunks_dev.jsonl"
+    
     # Ensure directories exist
     DATA_DIR.mkdir(exist_ok=True)
     LOGS_DIR.mkdir(exist_ok=True)
+    ARTIFACTS_DIR.mkdir(exist_ok=True)
+    SOURCE_DIR_USER.mkdir(parents=True, exist_ok=True)
+    SOURCE_DIR_DEV.mkdir(parents=True, exist_ok=True)
 
 settings = Settings()

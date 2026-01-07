@@ -8,16 +8,18 @@ from llm.retrieval.base import BaseRetriever
 logger = logging.getLogger(__name__)
 
 class BruteRetriever(BaseRetriever):
-    def __init__(self):
+    def __init__(self, chunks_path: Any = None):
         try:
-            chunks_path = settings.DATA_DIR / "artifacts" / "chunks.jsonl"
+            if not chunks_path:
+                chunks_path = settings.DATA_DIR / "artifacts" / "chunks.jsonl"
+                
             self.chunks = []
             if chunks_path.exists():
                 with open(chunks_path, 'r', encoding='utf-8') as f:
                     for line in f:
                         self.chunks.append(json.loads(line))
             
-            logger.info(f"BruteRetriever initialized with {len(self.chunks)} chunks.")
+            logger.info(f"BruteRetriever initialized with {len(self.chunks)} chunks from {chunks_path}.")
         except Exception as e:
             logger.error(f"Failed to initialize BruteRetriever: {e}")
             raise e

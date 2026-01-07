@@ -19,13 +19,14 @@ This directory contains the logic that runs while the server is active.
     *   **`intent_router.py`**: The "Traffic Cop". Classifies user intent.
     *   **`vertex_r2d2_client.py`**: The "Bouncer". Manages Helix/R2D2 auth.
     *   **`vertex_stream.py`**: The "Speaker". Streams Gemini response.
+    *   **`factory.py`**: The "Dispatcher". Selects the correct retriever (User/Dev).
     *   **`none_extractive.py`**: The "Fallback". Shows results without LLM.
 *   **`utils/`**: Shared utilities like `logger.py` and `redaction.py`.
 *   **`utils/`**: Shared utilities like `logger.py` and `redaction.py`.
 ### 📂 `tools/` (The Pipeline)
 These are run manually to manage your data and verify setup.
-*   **`ingest_docs.py`**: Reads your raw documents and breaks them into "chunks".
-*   **`build_index.py`**: Generates math vectors and saves the **FAISS** index.
+*   **`ingest_docs.py`**: Reads raw documents from `data/source/{corpus}` and chunks them.
+*   **`build_index.py`**: Generating embeddings and builds separate **FAISS** indices for User/Dev.
 *   **`check_connection.py`**: A standalone validator for Vertex AI/R2D2 and FAISS.
 
 ### 📂 `ui/` (The Face)
@@ -36,16 +37,16 @@ These are run manually to manage your data and verify setup.
 ## 2. The Data Flow (Step-by-Step)
 
 ### Phase A: Preparing your Knowledge (Indexing)
-1.  **Drop Files**: You put a PDF in `data/source/`.
-2.  **Parse**: You run `tools/ingest_docs.py`.
-3.  **Embed**: You run `tools/build_index.py`. 
-4.  **Save**: It saves vectors into `data/artifacts/faiss.index`.
+1.  **Drop Files**: Place User PDFs in `data/source/user/` and Developer docs in `data/source/developer/`.
+2.  **Parse**: Run `tools/ingest_docs.py`. It processes both folders automatically.
+3.  **Embed**: Run `tools/build_index.py`. 
+4.  **Save**: Vectors are saved to `data/artifacts/faiss_user.index` and `faiss_dev.index`.
 
 ### Phase B: Asking a Question (The Chat Flow)
-1.  **UI**: User types in `ui/index.html`.
+1.  **UI**: User toggles "User" or "Developer" mode and types a query.
 2.  **Intent Check**: Analyzed in `llm/intent_router.py`.
-3.  **Search**: `llm/retrieval/` finds the best chunks in FAISS.
-4.  **Generate**: Results streamed via `llm/vertex_stream.py`.
+3.  **Search**: `factory.py` picks the right index; `retrieval/` finds chunks.
+4.  **Generate**: Context + Persona (Friendly/Technical) sent to `vertex_stream.py`.
 
 ---
 

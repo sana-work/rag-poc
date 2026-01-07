@@ -105,6 +105,33 @@
             letter-spacing: 0.05em;
         }
 
+        /* Toggle Switch */
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 4px;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            margin-right: 1rem;
+        }
+
+        .toggle-option {
+            padding: 6px 16px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            border-radius: 16px;
+            color: var(--text-muted);
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .toggle-option.active {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
         /* --- Chat Area --- */
         #chat-container {
             flex: 1;
@@ -218,9 +245,65 @@
         .assistant .message-content h2,
         .assistant .message-content h3 {
             margin-top: 1.5rem;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.75rem;
             color: #fff;
             font-weight: 600;
+            line-height: 1.3;
+        }
+
+        /* Tables */
+        .assistant .message-content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+            font-size: 0.9em;
+        }
+
+        .assistant .message-content th,
+        .assistant .message-content td {
+            padding: 0.75rem;
+            border: 1px solid var(--border);
+            text-align: left;
+        }
+
+        .assistant .message-content th {
+            background: rgba(255, 255, 255, 0.05);
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        /* Blockquotes */
+        .assistant .message-content blockquote {
+            border-left: 4px solid var(--accent);
+            margin: 1rem 0;
+            padding-left: 1rem;
+            color: var(--text-muted);
+            font-style: italic;
+            background: rgba(139, 92, 246, 0.1);
+            /* Subtle accent bg */
+            padding: 0.5rem 0.5rem 0.5rem 1rem;
+            border-radius: 0 4px 4px 0;
+        }
+
+        /* Inline Code */
+        .message-content :not(pre)>code {
+            font-family: 'JetBrains Mono', monospace;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.85em;
+            color: #e2e8f0;
+        }
+
+        /* Links */
+        .assistant .message-content a {
+            color: var(--primary);
+            text-decoration: none;
+            border-bottom: 1px dotted var(--primary);
+        }
+
+        .assistant .message-content a:hover {
+            text-decoration: underline;
         }
 
         /* Intent Badge */
@@ -404,8 +487,11 @@
             <i class="fa-solid fa-robot"></i>
             <h1>RAG Assistant <span id="mode-badge" class="badge"></span></h1>
         </div>
-        <div>
-            <!-- Header Controls could go here -->
+
+        <!-- Corpus Toggle -->
+        <div class="toggle-container">
+            <div class="toggle-option active" data-value="user" onclick="setCorpus('user')">User</div>
+            <div class="toggle-option" data-value="developer" onclick="setCorpus('developer')">Developer</div>
         </div>
     </header>
 
@@ -455,6 +541,16 @@
         const modeBadge = document.getElementById('mode-badge');
 
         let sessionId = Math.random().toString(36).substring(7);
+        let selectedCorpus = "user"; // Default
+
+        function setCorpus(corpus) {
+            selectedCorpus = corpus;
+            document.querySelectorAll('.toggle-option').forEach(el => {
+                if (el.dataset.value === corpus) el.classList.add('active');
+                else el.classList.remove('active');
+            });
+            console.log("Corpus selected:", selectedCorpus);
+        }
 
         function scrollToBottom() {
             chatContainer.scrollTo({
@@ -503,8 +599,8 @@
             // State for Markdown accumulation
             let rawMarkdown = "";
 
-            // 3. Start Stream
-            const url = `/api/chat/stream?q=${encodeURIComponent(query)}&sessionId=${sessionId}`;
+            // 3. Start Stream - Passing Corpus
+            const url = `/api/chat/stream?q=${encodeURIComponent(query)}&sessionId=${sessionId}&corpus=${selectedCorpus}`;
             const eventSource = new EventSource(url);
 
             eventSource.addEventListener('token', (e) => {

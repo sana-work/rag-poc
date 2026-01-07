@@ -7,7 +7,8 @@ Welcome to the **GenAI RAG (Retrieval-Augmented Generation) Proof of Concept**. 
 ## 🚀 Key Capabilities
 
 *   **Hybrid Intent Engine**: Automatically classifies user queries into **Greetings**, **Closures**, **Off-Topic**, or **RAG Queries** to ensure context-aware responses.
-*   **Adaptive Retrieval Factory**: A multi-tiered search engine that attempts semantic FAISS search first, with automatic fallback to TF-IDF and Brute Force if indices are missing.
+*   **Multi-Corpus Support**: Seamlessly switches between "User" and "Developer" knowledge bases, applying distinct personas (friendly vs. technical) and querying separate vector indices.
+*   **Adaptive Retrieval Factory**: A multi-tiered search engine that selects the correct index based on the active corpus and falls back gracefully to TF-IDF if needed.
 *   **Enterprise Security Gateway**: Native integration with **R2D2** and **Helix** for audited, governed access to Google Vertex AI.
 *   **Streaming Intelligence**: Utilizes **Server-Sent Events (SSE)** to stream LLM responses token-by-token for a modern, responsive chat experience.
 *   **Extractive Fallback Mode**: Can operate in a "Zero-LLM" mode where it extracts and formats high-relevance source chunks directly from documents without generative synthesis.
@@ -66,16 +67,16 @@ graph TB
 
 Every user interaction follows a strictly governed lifecycle:
 
-1.  **Entry**: User submits a query via the SSE-enabled Chat UI.
-2.  **Intent analysis**: `IntentRouter` classifies the request. If it's a "Greeting", the system bypasses retrieval for speed.
+1.  **Entry**: User submits a query via the Chat UI, selecting a **Corpus** (User vs. Dev).
+2.  **Intent analysis**: `IntentRouter` classifies the request. If it's a "Greeting", the system bypasses retrieval.
 3.  **Auth Handshake**: `VertexR2D2Client` fetches a fresh **Helix token** and prepares the **R2D2** headers.
 4.  **Vectorization**: The query is sent to Vertex AI's `text-embedding-005` to generate a 768-dimension vector.
-5.  **Retrieval**: The `RetrieverFactory` executes a similarity search against the local FAISS index.
-6.  **Fallback Check**: If FAISS fails, the system immediately switches to TF-IDF or Brute Force to ensure a response is always provided.
-7.  **Context Construction**: Top $K$ chunks (default 3) are assembled into a structured context block with document metadata.
-8.  **Prompt Engineering**: A system instruction (including formatting rules and persona) is combined with the context and user query.
-9.  **Generative Inference**: The prompt is processed by `Gemini 2.0 Flash`, which generates an answer grounded strictly in the provided context.
-10. **SSE Delivery**: Tokens are streamed back to the frontend, providing a real-time, fluid user experience.
+5.  **Retrieval Routing**: The `RetrieverFactory` uses the `corpus` tag to load the specific FAISS index (`faiss_user.index` or `faiss_dev.index`).
+6.  **Fallback Check**: If FAISS fails, the system switches to the corpus-specific TF-IDF model.
+7.  **Context Construction**: Top $K$ chunks (default 5) are assembled into a structured context block.
+8.  **Prompt Engineering**: A tailored system instruction (Friendly/Conversational or Technical/Precise) is selected based on the active corpus.
+9.  **Generative Inference**: The prompt is processed by `Gemini 2.0 Flash`, which generates an answer grounded strictly in the context.
+10. **SSE Delivery**: Tokens are streamed back to the frontend.
 
 ---
 

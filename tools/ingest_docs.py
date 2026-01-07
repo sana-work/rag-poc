@@ -146,8 +146,23 @@ def ingest_docs(input_dir: str, output_dir: str):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Ingest documents")
-    parser.add_argument("--input", default=str(settings.DATA_DIR / "source"), help="Input directory containing docs")
-    parser.add_argument("--output", default=str(settings.DATA_DIR / "interim"), help="Output directory for text")
+    parser.add_argument("--input", help="Input directory containing docs")
+    parser.add_argument("--output", help="Output directory for text")
     args = parser.parse_args()
     
-    ingest_docs(args.input, args.output)
+    if args.input and args.output:
+        # Manual Override
+        ingest_docs(args.input, args.output)
+    else:
+        # Default Multi-Corpus Behavior
+        logger.info("Running Multi-Corpus Ingestion...")
+        
+        # 1. User Corpus
+        logger.info("--- Processing User Corpus ---")
+        user_out = settings.DATA_DIR / "interim" / "user"
+        ingest_docs(str(settings.SOURCE_DIR_USER), str(user_out))
+        
+        # 2. Developer Corpus
+        logger.info("--- Processing Developer Corpus ---")
+        dev_out = settings.DATA_DIR / "interim" / "developer"
+        ingest_docs(str(settings.SOURCE_DIR_DEV), str(dev_out))
