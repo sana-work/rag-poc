@@ -20,7 +20,8 @@ rag-poc/
 ├── tools/            # Utility & Pipeline tools
 │   ├── check_connection.py  # Environment validator
 │   ├── ingest_docs.py       # Document parsing (Multi-Corpus)
-│   └── build_index.py       # Vector index creation (Multi-Corpus)
+│   ├── build_index.py       # Vector index creation (Multi-Corpus)
+│   └── cleanup.py           # Project reset utility
 ├── ui/                   # Frontend UI (Vanilla JS/HTML/CSS)
 │   └── index.html        # Main Chat Interface (with User/Dev Toggle)
 ├── data/                 # Local data storage (Git ignored)
