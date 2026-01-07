@@ -113,7 +113,12 @@ async def chat_stream(
             full_response = ""
             if intent in [Intent.GREETING, Intent.CLOSURE, Intent.OFF_TOPIC]:
                 if settings.MODE == "none":
-                    full_response = "Hello! tailored response not available in none mode."
+                    if intent == Intent.GREETING:
+                        full_response = "Hello! I am ready to help you search your documents (Local Mode)."
+                    elif intent == Intent.CLOSURE:
+                        full_response = "Goodbye! Have a great day."
+                    else:
+                        full_response = "I am in Local Mode. Please ask a specific question about your documents."
                 else:
                     try:
                         generator = await get_llm_response(settings.MODE, q, chunks, system_instruction)

@@ -12,6 +12,7 @@ __pycache__/
 data/interim/
 data/artifacts/
 logs/
+server.log
 
 # IDE and OS
 .DS_Store
