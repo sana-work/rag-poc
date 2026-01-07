@@ -96,6 +96,13 @@ python -m uvicorn main:app --reload
 ```
 Open your browser at: **[http://localhost:8000/](http://localhost:8000/)**
 
+### 5. Maintenance (Cleanup)
+To reset the project (delete indices, logs, and parsed files) without touching raw data:
+```bash
+python tools/cleanup.py
+```
+*This safely removes `data/artifacts`, `data/interim`, and `logs/` content.*
+
 ---
 
 ## Key Features
