@@ -22,12 +22,14 @@ rag-poc/
 │   ├── ingest_docs.py       # Document parsing (Multi-Corpus)
 │   ├── build_index.py       # Vector index creation (Multi-Corpus)
 │   └── cleanup.py           # Project reset utility
+├── SAMPLE_RAG_QUESTIONS.txt # Test Questions (also .md, .txt)
 ├── ui/                   # Frontend UI (Vanilla JS/HTML/CSS)
 │   └── index.html        # Main Chat Interface (with User/Dev Toggle)
 ├── data/                 # Local data storage (Git ignored)
 │   ├── source/           # Raw documents
 │   │   ├── user/         # "User" corpus source files
 │   │   └── developer/    # "Developer" corpus source files
+│   │   └── Supports: .pdf, .docx, .html, .pptx
 │   ├── artifacts/        # Search indices / Chunks
 │   └── interim/          # Extracted text (Split by corpus)
 ├── .env                  # Your local secrets (R2D2, GCP Project)

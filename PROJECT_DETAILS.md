@@ -21,11 +21,10 @@ This directory contains the logic that runs while the server is active.
     *   **`vertex_stream.py`**: The "Speaker". Streams Gemini response.
     *   **`factory.py`**: The "Dispatcher". Selects the correct retriever (User/Dev).
     *   **`none_extractive.py`**: The "Fallback". Shows results without LLM.
-*   **`utils/`**: Shared utilities like `logger.py` and `redaction.py`.
-*   **`utils/`**: Shared utilities like `logger.py` and `redaction.py`.
+
 ### 📂 `tools/` (The Pipeline)
 These are run manually to manage your data and verify setup.
-*   **`ingest_docs.py`**: Reads raw documents from `data/source/{corpus}` and chunks them.
+*   **`ingest_docs.py`**: Ingests `.pdf`, `.docx`, `.html`, and `.pptx` documents from local folders.
 *   **`build_index.py`**: Generating embeddings and builds separate **FAISS** indices for User/Dev.
 *   **`check_connection.py`**: A standalone validator for Vertex AI/R2D2 and FAISS.
 
@@ -59,3 +58,9 @@ These are run manually to manage your data and verify setup.
 | **Retrieval** | Searching for context | `llm/retrieval/` |
 | **Auth** | Helix/R2D2 Security | `llm/vertex_r2d2_client.py` |
 | **Interface** | Showing the chat UI | `ui/index.html`, `main.py` |
+
+---
+
+## 4. Phase 2: Agentic Architecture & MCP
+- [ ] **Smart Router**: Semantic intent dispatcher.
+- [ ] **MCP Server**: Standardized tool interface.

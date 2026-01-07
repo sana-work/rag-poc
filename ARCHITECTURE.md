@@ -34,7 +34,7 @@ graph TD
 
 ## 3. Data Flow
 
-1. **Ingestion**: `tools/ingest_docs.py` parses raw documents from `data/source/user` and `data/source/developer`.
+1. **Ingestion**: `tools/ingest_docs.py` parses raw documents (`.pdf`, `.docx`, `.html`, `.pptx`) from `data/source/user` and `data/source/developer`.
 2. **Indexing**: `tools/build_index.py` creates separate vector/TF-IDF indices for each corpus.
 3. **Querying**: 
    - **Step 1: Intent**: User question is classified in `llm/intent_router.py`.
@@ -47,7 +47,6 @@ graph TD
 - **Helix**: Used to obtain ephemeral access tokens.
 - **R2D2**: Routes all Vertex AI traffic through enterprise gateways.
 - **Redaction**: Structured logging with PII masking.
-```
 
 -----------------------------------------------------------------------
 *Note: For setup instructions, please refer to [README.md](README.md).*

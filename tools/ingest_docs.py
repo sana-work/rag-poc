@@ -1,168 +1,94 @@
-import argparse
-import sys
+import os
 from pathlib import Path
-import json
-import logging
-import hashlib
-from typing import Set, Dict
+from pptx import Presentation
+from langchain_community.document_loaders import PyPDFLoader, UnstructuredWordDocumentLoader, BSHTMLLoader
 
-# Setup robust path handling - MUST be before importing project modules
-BASE_DIR = Path(__file__).parent.parent
-if str(BASE_DIR) not in sys.path:
-    sys.path.append(str(BASE_DIR))
-
-# Import project modules
-from config import settings
-
-# Import third-party parsers
-from pypdf import PdfReader
-from docx import Document
-from bs4 import BeautifulSoup
-
-
-
-
-# Setup logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__name__)
-
-def parse_pdf(file_path: Path) -> str:
-    try:
-        reader = PdfReader(file_path)
-        text = ""
-        for page in reader.pages:
-            text += page.extract_text() + "\n"
-        return text
-    except Exception as e:
-        logger.error(f"Error parsing PDF {file_path}: {e}")
-        return ""
-
-def parse_docx(file_path: Path) -> str:
-    try:
-        doc = Document(file_path)
-        return "\n".join([para.text for para in doc.paragraphs])
-    except Exception as e:
-        logger.error(f"Error parsing DOCX {file_path}: {e}")
-        return ""
-
-def parse_html(file_path: Path) -> str:
-    try:
-        with open(file_path, 'r', encoding='utf-8') as f:
-            soup = BeautifulSoup(f, 'html.parser')
-            return soup.get_text(separator=' ', strip=True)
-    except Exception as e:
-        logger.error(f"Error parsing HTML {file_path}: {e}")
-        return ""
-
-def ingest_docs(input_dir: str, output_dir: str):
-    input_path = Path(input_dir).resolve()
-    output_path = Path(output_dir).resolve()
+def load_pptx(file_path: Path) -> str:
+    """
+    Extracts text from a PowerPoint (.pptx) file.
     
-    logger.info(f"Checking input directory: {input_path}")
-    
-    if not input_path.exists():
-        logger.error(f"Input directory does not exist: {input_path}")
-        return
-    
-    if not input_path.is_dir():
-        logger.error(f"Input path is not a directory: {input_path}")
+    Args:
+        file_path (Path): Path to the .pptx file.
+        
+    Returns:
+        str: Combined text from all slides.
+    """
+    prs = Presentation(file_path)
+    text_runs = []
+    for slide in prs.slides:
+        for shape in slide.shapes:
+            if hasattr(shape, "text") and shape.text:
+                text_runs.append(shape.text)
+    return "\n".join(text_runs)
+
+def ingest_docs(corpus_name: str):
+    """
+    Parses raw documents from data/source and saves text to data/interim.
+    Supports: .pdf, .docx, .html, .pptx
+    """
+    base_dir = Path(__file__).parent.parent
+    source_dir = base_dir / "data" / "source" / corpus_name
+    interim_dir = base_dir / "data" / "interim" / corpus_name
+
+    if not source_dir.exists():
+        print(f"Error: Source directory {source_dir} not found.")
         return
 
-    output_path.mkdir(parents=True, exist_ok=True)
+    interim_dir.mkdir(parents=True, exist_ok=True)
+
+    print(f"Ingesting documents from {source_dir}...")
     
-    supported_extensions = {'.pdf': parse_pdf, '.docx': parse_docx, '.html': parse_html}
-    
-    count = 0
-    skipped = 0
-    duplicates_filename = 0
-    duplicates_content = 0
-    total_files = 0
-    
-    seen_filenames: Set[str] = set()
-    seen_hashes: Dict[str, str] = {} # hash -> original_filename
-    
-    for file_path in input_path.rglob('*'):
-        if file_path.is_file():
-            total_files += 1
+    files = list(source_dir.glob("*.*"))
+    if not files:
+        print("  No files found.")
+        return
+
+    for file in files:
+        output_file = interim_dir / f"{file.stem}.txt"
+        
+        # Skip if already processed (naive check)
+        # if output_file.exists():
+        #     continue
+
+        print(f"  Processing {file.name}...")
+        try:
+            # Load text based on extension
+            text = ""
+            if file.suffix == ".pdf":
+                loader = PyPDFLoader(str(file))
+                pages = loader.load()
+                text = "\n".join([p.page_content for p in pages])
             
-            # 1. Filename Duplicate Check (Case-insensitive)
-            filename_lower = file_path.name.lower()
-            if filename_lower in seen_filenames:
-                logger.warning(f"Skipping duplicate filename: {file_path.name}")
-                duplicates_filename += 1
-                continue
-                
-            if file_path.suffix.lower() in supported_extensions:
-                parser = supported_extensions[file_path.suffix.lower()]
-                logger.info(f"Processing {file_path.name}...")
-                
-                text = parser(file_path)
-                if text:
-                    # Normalize whitespace
-                    text = " ".join(text.split())
-                    
-                    # 2. Content Duplicate Check (Hash)
-                    content_hash = hashlib.sha256(text.encode('utf-8')).hexdigest()
-                    if content_hash in seen_hashes:
-                        logger.warning(f"Skipping duplicate content: {file_path.name} (identical to {seen_hashes[content_hash]})")
-                        duplicates_content += 1
-                        continue
-                    
-                    seen_filenames.add(filename_lower)
-                    seen_hashes[content_hash] = file_path.name
-                    
-                    doc_id = file_path.stem
-                    output_file = output_path / f"{doc_id}.txt"
-                    
-                    with open(output_file, 'w', encoding='utf-8') as f:
-                        f.write(text)
-                    
-                    # Save metadata
-                    meta_file = output_path / f"{doc_id}.meta.json"
-                    with open(meta_file, 'w', encoding='utf-8') as f:
-                        json.dump({
-                            "sourcePath": str(file_path),
-                            "docTitle": file_path.name,
-                            "docId": doc_id,
-                            "contentHash": content_hash
-                        }, f)
-                    
-                    count += 1
-                else:
-                    logger.warning(f"Failed to extract text from {file_path.name}")
-                    skipped += 1
+            elif file.suffix == ".docx":
+                loader = UnstructuredWordDocumentLoader(str(file))
+                docs = loader.load()
+                text = "\n".join([d.page_content for d in docs])
+
+            elif file.suffix == ".pptx":
+                print(f"  [PPTX] Extracting slides from {file.name}...")
+                text = load_pptx(file)
+
+            elif file.suffix == ".html":
+                loader = BSHTMLLoader(str(file))
+                docs = loader.load()
+                text = "\n".join([d.page_content for d in docs])
+            
             else:
-                skipped += 1
-                
-    logger.info(f"Found {total_files} total files in {input_path}")
-    logger.info(f"Ingested {count} documents to {output_path}")
-    if duplicates_filename > 0:
-        logger.info(f"Skipped {duplicates_filename} files with duplicate names")
-    if duplicates_content > 0:
-        logger.info(f"Skipped {duplicates_content} files with duplicate content")
-    
-    if total_files > 0 and count == 0:
-        logger.warning(f"Found {total_files} files but ingested 0. Ensure files have extensions: {list(supported_extensions.keys())}")
+                print(f"  Skipping unsupported file: {file.name}")
+                continue
+
+            # Save to interim
+            with open(output_file, "w", encoding="utf-8") as f:
+                f.write(text)
+            
+        except Exception as e:
+            print(f"  Error processing {file.name}: {e}")
+
+    print("Ingestion complete.")
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Ingest documents")
-    parser.add_argument("--input", help="Input directory containing docs")
-    parser.add_argument("--output", help="Output directory for text")
-    args = parser.parse_args()
-    
-    if args.input and args.output:
-        # Manual Override
-        ingest_docs(args.input, args.output)
-    else:
-        # Default Multi-Corpus Behavior
-        logger.info("Running Multi-Corpus Ingestion...")
-        
-        # 1. User Corpus
-        logger.info("--- Processing User Corpus ---")
-        user_out = settings.DATA_DIR / "interim" / "user"
-        ingest_docs(str(settings.SOURCE_DIR_USER), str(user_out))
-        
-        # 2. Developer Corpus
-        logger.info("--- Processing Developer Corpus ---")
-        dev_out = settings.DATA_DIR / "interim" / "developer"
-        ingest_docs(str(settings.SOURCE_DIR_DEV), str(dev_out))
+    import sys
+    if len(sys.argv) < 2:
+        print("Usage: python ingest_docs.py <corpus_name>")
+        sys.exit(1)
+    ingest_docs(sys.argv[1])
