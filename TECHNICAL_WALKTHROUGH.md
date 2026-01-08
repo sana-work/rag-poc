@@ -11,9 +11,9 @@ Welcome to the **GenAI RAG (Retrieval-Augmented Generation) Proof of Concept**. 
 *   **Adaptive Retrieval Factory**: A multi-tiered search engine that selects the correct index based on the active corpus and falls back gracefully to TF-IDF if needed.
 *   **Enterprise Security Gateway**: Native integration with **R2D2** and **Helix** for audited, governed access to Google Vertex AI.
 *   **Streaming Intelligence**: Utilizes **Server-Sent Events (SSE)** to stream LLM responses token-by-token for a modern, responsive chat experience.
-*   **Extractive Fallback Mode**: Can operate in a "Zero-LLM" mode where it extracts and formats high-relevance source chunks directly from documents without generative synthesis.
+*   **Extractive Fallback Mode**: Can operate in a "Zero-LLM" mode (Local Mode) where it extracts and formats high-relevance source chunks directly from documents without generative synthesis.
 *   **Privacy-First Logging**: Built-in JSON logging with automatic PII and sensitive token redaction (PII/Credential masking).
-*   **Multi-Source Ingestion**: Unified pipeline for parsing and vectorizing `.pdf`, `.docx`, and `.html` technical documentation.
+*   **Multi-Source Ingestion**: Unified pipeline for parsing and vectorizing `.pdf`, `.docx`, `.pptx`, and `.html` technical documentation.
 
 ---
 
@@ -94,10 +94,18 @@ The `VertexR2D2Client` acts as a specialized singleton:
 *   **R2D2 Header Injection**: Ensures the `x-r2d2-soeid` is present in every request for enterprise auditing.
 *   **SSL Handling**: Dynamically respects `SSL_CERT_FILE` environment variables for corporate proxy certificates.
 
-### 3. Data Ingestion Pipeline
-*   **Cleaner**: Strips noise from HTML and extracts pure text from PDFs/Word docs.
-*   **Chunker**: Uses an overlapping window strategy (e.g., 1000 chars with 200 overlap) to preserve semantic context across chunk boundaries.
-*   **Indexer**: Batches documents for efficient embedding generation and FAISS index construction.
+### 3. Data Ingestion & Fidelity (Phase 2)
+The ingestion pipeline (`tools/ingest_docs.py`) has been upgraded for maximum data fidelity:
+*   **Format Support**:
+    *   **PDF (`pypdf`)**: Extracts text and injects `--- [Page X] ---` markers.
+    *   **PPTX (`python-pptx`)**: Iterates through slides, injecting `--- [Slide X] ---` markers and extracting text from shapes.
+    *   **DOCX/HTML**: Standard parsing with hyperlink extraction.
+*   **Link Preservation**:
+    *   Hyperlinks found in PDFs (Annotations) or PPTX (Runs) are extracted and appended to the text block (e.g., `text (url)`).
+    *   This allows the LLM to cite and provide clickable links in the final answer.
+*   **Precision Citations**:
+    *   Metadata logic ensures `docTitle` defaults to the filename if missing.
+    *   The system prompt enforces a strict citation format: `SourceN : Title (Page X)`.
 
 ---
 
