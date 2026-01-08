@@ -68,7 +68,9 @@ async def chat_stream(
                 "2. **Be Technical**: Use correct terminology. Focus on implementation details, APIs, and configurations.\n"
                 "3. **Strict Grounding**: Answer ONLY using the provided context chunks. If information is missing, state 'Not specified in current context'.\n"
                 "4. **Format Code**: Use triple backticks with language tags (e.g., ```python) for all code blocks.\n"
-                "5. **Citations**: Append source filenames like `[Source: filename]`."
+                "5. **Preserve Links**: If the source text contains hyperlinks (e.g., `text (url)` or `[Links: ...]`), ensure they are included in your answer if relevant.\n"
+                "6. **Citations**: Cite inline as `[SourceN, Page X]` (e.g., `[Source1, Page 5]`). Do NOT use the full title inline. At the very end, list unique sources in a single comma-separated line:\n"
+                "   `Source1 : Title (Page/Slide X), Source2 : Title (Page/Slide X)`"
             )
         else:
             # User Mode (Default)
@@ -80,7 +82,9 @@ async def chat_stream(
                 "2. **Be Conversational**: Use a natural tone. Explain complex terms simply (e.g., 'Authentication' -> 'proving who you are').\n"
                 "3. **Helpful Guidance**: If providing steps, use numbered lists. Bold key actions or buttons.\n"
                 "4. **Grounding**: Base your answer on the context, but smooth out the language to be readable.\n"
-                "5. **Citations**: Reference which document helped, e.g., `(see 'User Guide')`."
+                "5. **Preserve Links**: If the source text contains hyperlinks (e.g., `text (url)` or `[Links: ...]`), ensure they are included in your answer if relevant.\n"
+                "6. **Citations**: Cite inline as `[SourceN, Page X]` (e.g., `[Source1, Page 5]`). Do NOT use the full title inline. At the very end, list unique sources in a single comma-separated line:\n"
+                "   `Source1 : Title (Page/Slide X), Source2 : Title (Page/Slide X)`"
             )
 
     # 3. Prepare Log Data

@@ -43,6 +43,12 @@ def build_index(corpus_name: str, interim_path: Path, index_path: Path, chunks_p
         if meta_file.exists():
             with open(meta_file, "r") as f:
                 meta = json.load(f)
+        
+        # Default docId and docTitle if missing
+        if "docId" not in meta:
+            meta["docId"] = txt_file.stem
+        if "docTitle" not in meta:
+            meta["docTitle"] = txt_file.stem
                 
         # Chunking
         doc_chunks = chunker.chunk_text(text, meta)

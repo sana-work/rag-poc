@@ -32,7 +32,8 @@ async def generate_response_stream(query: str, context_chunks: list, system_inst
             "   - **Bold** important terms or concepts.\n"
             "   - Use `Code Blocks` for commands, code, or configuration snippets.\n"
             "4. **Cite Sources**: Reference your sources clearly (e.g., *[Source: filename]*).\n"
-            "5. **Handling Missing Info**: If you can't find the answer, politely explain what information is available or state that the specific detail is missing. Do not guess.\n\n"
+            "5. **Handling Missing Info**: If you can't find the answer, politely explain what information is available or state that the specific detail is missing. Do not guess.\n"
+            "6. **Preserve Links**: If the source text contains hyperlinks (e.g., `text (url)` or `[Links: ...]`), ensure they are included in your answer if relevant.\n\n"
             "Keep the tone warm, engaging, and professional."
         )
 
