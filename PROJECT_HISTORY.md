@@ -49,7 +49,6 @@ This document tracks the evolution of the application from its initial foundatio
 ---
 
 ## 📊 Summary of Artifacts Created
-*   `TECHNICAL_WALKTHROUGH.md`: Detailed engineering handbook.
-*   `DEMO_PRESENTATION.md`: Slide content for stakeholder demos.
-*   `SAMPLE_RAG_QUESTIONS.md`: Validated test questions for Developer usage.
+*   `SAMPLE_DEVELOPER_RAG_QUESTIONS.txt`: Validated test questions for Developer usage.
+*   `SAMPLE_USER_RAG_QUESTIONS.txt`: Validated test questions for User usage.
 *   `PROJECT_HISTORY.md`: This file.
