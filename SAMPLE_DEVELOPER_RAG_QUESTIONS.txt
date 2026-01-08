@@ -1,0 +1,87 @@
+# Sample RAG Developer Questions
+
+This document contains a list of technical questions designed to test the **Developer Mode** of the RAG application. These questions cover architecture, API usage, deployment, and troubleshooting.
+
+---
+
+## 🔹 A. System Understanding & Architecture
+*   **Overview**: What is the overall purpose of the Ops UI and Simulator platform?
+*   **Workflow**: How does the Maker–Checker workflow work across entities?
+*   **Tech Stack**: Which components use MongoDB, Oracle, and Kafka?
+*   **Comparisons**: How does SRDH differ from the Ops UI backend?
+*   **Integrations**: What downstream systems does this platform integrate with?
+
+## 🔹 B. API Usage & Development
+*   **Hierarchy**: How do I create or update a Hierarchy using the API?
+*   **Processing Codes**: What is the approval flow for Processing Codes?
+*   **Data Retrieval**: 
+    *   Which API fetches pipeline vs active records?
+    *   How can I retrieve audit history for a Program?
+    *   What are the differences between `/getPipeline*` and `/get*History` APIs?
+*   **Transactions**: How do I close an active Transaction Code?
+*   **External Systems**: What APIs interact with PISMO for hierarchy data?
+
+## 🔹 C. Data Modeling & Behavior
+*   **Validation**: What fields are mandatory when creating a Hierarchy?
+*   **Structure**: How are levels represented in hierarchy creation?
+*   **Identity**: How does `uniqueReferenceId` work across pipeline entities?
+*   **Concurrency**: How is optimistic locking handled?
+*   **Workflows**: What happens if an entity is rejected in the pipeline?
+
+## 🔹 D. CI/CD & Deployment
+*   **Source Control**: Where are the backend repositories located?
+*   **Documentation**: How do I access Swagger for DEV vs UAT?
+*   **Infrastructure**: 
+    *   What OpenShift namespace is used for deployment?
+    *   How do I verify if a backend service is running?
+*   **Configuration**: How are environment-specific URLs structured?
+
+## 🔹 E. Logging & Troubleshooting
+*   **Exceptions**: 
+    *   What does a `MongoSocketReadTimeoutException` indicate?
+    *   What causes `ORA-01017` errors and how can they be fixed?
+*   **Debugging**: 
+    *   How should I troubleshoot frequent `404 NOT_FOUND` errors?
+    *   Which logs indicate Kafka consumer failures?
+    *   How do I differentiate DB connectivity vs application startup issues?
+*   **Severity**: What errors are considered critical vs informational?
+
+## 🔹 F. Access & Security
+*   **Access Requests**: 
+    *   How do I request Maker access for Ops UI?
+    *   Which CMP group is needed for Checker access?
+    *   How do I get read-only access to Manual Adjustments?
+*   **Roles**: 
+    *   What access is required for SRDH Maker vs Checker?
+    *   What role is required for high-value transaction checking?
+*   **Permissions**: What is the difference between `OPS_UI_VIEW` and `MANUAL_ADJUSTMENT_VIEW`?
+
+## 🔹 G. Feature Development & Enhancements
+*   **Patterns**: 
+    *   How can I add a new entity following the existing pipeline pattern?
+    *   How do I reuse an existing feature to build a new one?
+    *   How do I implement a cancel flow similar to existing patterns?
+*   **Testing**: What unit tests are expected when adding a new feature?
+*   **Localization**: How should i18n changes be handled for new UI components?
+
+## 🔹 H. AI-Assisted Development (Prompt Library)
+*   **Visualization**: Generate Mermaid diagrams for the hierarchy approval workflow.
+*   **Analysis**: Analyze the admin-division feature and extend it to a new entity.
+*   **Refactoring**: Refactor shared logic for pipeline approval handling.
+*   **Testing**: Generate unit tests for processing code approval.
+*   **Comparison**: Compare manual adjustment flow with account inquiry flow.
+
+## 🔹 I. Operations & Support
+*   **Environment**: How can I verify whether an error is environment-specific?
+*   **Diagnostics**: 
+    *   What logs should I check first when the simulator fails?
+    *   How do I diagnose MongoDB replica set issues?
+    *   What monitoring signals indicate Kafka lag problems?
+*   **Validation**: How do I validate database credentials in UAT?
+
+## 🔹 J. Meta / RAG Capability Checks
+*   **Summarization**: Summarize all APIs related to Hierarchy.
+*   **Listing**: List all roles required to fully use Ops UI in UAT.
+*   **Root Cause**: Show common errors and their root causes.
+*   **Lifecycle**: Explain the full lifecycle of a Transaction Code.
+*   **Environment Diff**: Compare DEV vs UAT deployment differences.
