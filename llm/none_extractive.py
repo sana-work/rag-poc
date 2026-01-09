@@ -23,12 +23,17 @@ async def generate_response_stream(
         
         # Extract page/slide info from markers if present
         page_label = ""
-        # Look for the FIRST marker in the chunk to attribute it
-        match = re.search(r'--- \[(Page|Slide) (\d+)\] ---', text)
+        # Look for the markers (Page or Slide)
+        # Matches: --- [Page 5] --- or similar variations
+        match = re.search(r'--- \[(Page|Slide)\s+(\d+)\] ---', text)
         if match:
             type_label = match.group(1)
             num = match.group(2)
             page_label = f"({type_label} {num})"
+        else:
+            # Fallback: check metadata if available
+            if 'page' in chunk['meta']:
+                page_label = f"(Page {chunk['meta']['page']})"
         
         # Clean markers from display text
         display_text = re.sub(r'--- \[(Page|Slide) \d+\] ---\n?', '', text).strip()
