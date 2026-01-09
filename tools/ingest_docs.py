@@ -139,7 +139,15 @@ def ingest_docs(corpus_name: str):
 
 if __name__ == "__main__":
     import sys
-    if len(sys.argv) < 2:
-        print("Usage: python ingest_docs.py <corpus_name>")
-        sys.exit(1)
-    ingest_docs(sys.argv[1])
+    
+    # Default to both corpora if no argument is provided
+    targets = ["user", "developer"]
+    
+    # If argument provided, just use that one
+    if len(sys.argv) >= 2:
+        targets = [sys.argv[1]]
+
+    print(f"Starting ingestion for targets: {targets}")
+    for corpus in targets:
+        print(f"\n--- Ingesting Corpus: {corpus} ---")
+        ingest_docs(corpus)
