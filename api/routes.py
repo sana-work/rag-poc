@@ -83,8 +83,8 @@ async def chat_stream(
                 "3. **Helpful Guidance**: If providing steps, use numbered lists. Bold key actions or buttons.\n"
                 "4. **Grounding**: Base your answer on the context, but smooth out the language to be readable.\n"
                 "5. **Preserve Links**: If the source text contains hyperlinks (e.g., `text (url)` or `[Links: ...]`), ensure they are included in your answer if relevant.\n"
-                "6. **Citations**: Cite inline as `[SourceN, Page X]` (e.g., `[Source1, Page 5]`). Do NOT use the full title inline. At the very end, list unique sources in a single comma-separated line:\n"
-                "   `Source1 : Title (Page/Slide X), Source2 : Title (Page/Slide X)`"
+                "6. **Citations**: Cite inline as `[SourceN]`. At the very end, you MUST list unique sources in this exact format including Page/Slide numbers:\n"
+                "   `Source1 : Title (Page X), Source2 : Title (Slide Y)`"
             )
 
     # 3. Prepare Log Data
