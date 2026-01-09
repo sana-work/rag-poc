@@ -32,9 +32,8 @@ rag-poc/
 │   │   └── Supports: .pdf, .docx, .html, .pptx
 │   ├── artifacts/        # Search indices / Chunks
 │   └── interim/          # Extracted text (Split by corpus)
-├── .env                  # Your local secrets (R2D2, GCP Project)
+├── .env                  # Local secrets (R2D2, GCP Project)
 ├── requirements.txt      # Python dependencies
-├── ARCHITECTURE.md       # Technical design overview
 └── README.md             # This file
 ```
 
