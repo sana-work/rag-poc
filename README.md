@@ -1,6 +1,6 @@
-# Informational RAG PoC (Python + JS)
+# RAG PoC (with Hybrid Agentic Roadmap)
 
-A simplified, enterprise-ready RAG (Retrieval Augmented Generation) system. This version uses a lightweight JS frontend served directly by a FastAPI backend.
+A standard-setting **RAG (Retrieval Augmented Generation)** architecture for informational queries, with a strategic roadmap to evolve into a **Hybrid Agentic AI** solution.
 
 ## Project Structure
 
@@ -107,7 +107,7 @@ python tools/cleanup.py
 
 ---
 
-## Key Features
+## Key Features (Current Phase 1)
 - **Streaming UI**: Dynamic responses via Server-Sent Events (SSE).
 - **Multi-Corpus Support**:
     - **User Mode**: Friendly, non-technical explanations grounded in user docs.
@@ -122,6 +122,10 @@ python tools/cleanup.py
     - **Vertex AI (LLM)**: Full capability with generative reasoning.
     - **Local Extractive (None)**: Fast, offline-first search fallback.
 - **Citations**: Interactive sourcing with relevance scoring.
+
+## 🔮 Future Capabilities (Roadmap)
+- **Agentic AI Orchestration**: Intelligent routing to **RAG** (for info) or **MCP Tools** (for action).
+- **MCP Integration**: Standardized connection to downstream APIs via Model Context Protocol.
 
 ## Troubleshooting
 - **401/403 Error**: Run `helix auth login` to refresh your session.

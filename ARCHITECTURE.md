@@ -48,5 +48,36 @@ graph TD
 - **R2D2**: Routes all Vertex AI traffic through enterprise gateways.
 - **Redaction**: Structured logging with PII masking.
 
+## 5. Future Architecture (Roadmap)
+
+The following schematic outlines the planned evolution towards a **Hybrid Agentic Architecture**:
+
+```mermaid
+graph TB
+    subgraph "Client Layer"
+        User -->|Prompt| UI["UI Application"]
+    end
+
+    subgraph "Orchestration Layer"
+        UI <-->|JSON| SR["Agentic AI Orchestrator (SmartRouter)"]
+        SR -->|Request Token| COIN["COIN Authentication Server"]
+        COIN -->|Valid Token| SR
+        
+        SR <-->|MCP Protocol| MCPS["MCP Server Tools"]
+        MCPS <-->|API| BAS["Backend API Services"]
+        MCPS <-->|Query| VDB["Vector DB (Static Data)"]
+    end
+
+    subgraph "Gateway Layer"
+        SR <-->|Prompt + Tools| R2D2["R2D2 Gateway"]
+        R2D2 <-->|Sync| VAULT["HashiCorp Vault"]
+    end
+
+    subgraph "Google Cloud Platform"
+        R2D2 <-->|Secure Tunnel| VPC["Citi VPC Cloud Perimeter"]
+        VPC <--> VAI["CITI Managed Vertex AI API"]
+    end
+```
+
 -----------------------------------------------------------------------
 *Note: For setup instructions, please refer to [README.md](README.md).*

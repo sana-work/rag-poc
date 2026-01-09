@@ -4,6 +4,32 @@ This document tracks the evolution of the application from its initial foundatio
 
 ---
 
+## 🔮 Phase 3: Strategic Roadmap (Proposed: Hybrid RAG + Agentic AI)
+**Goal**: Evolve from a passive retrieval system to an active Agentic AI solution capable of executing tasks.
+
+### 🌟 Key Architectural Shifts
+*   **Hybrid Architecture**: Combines **RAG** (for knowledge) with **Agentic AI** (for action).
+*   **SmartRouter (Orchestrator)**: A central brain that directs queries to either the RAG pipeline or the Agentic toolset.
+*   **MCP Integration**: Adopts the **Model Context Protocol (MCP)** to standardize connections between the AI and external systems.
+
+### 🧩 New Components
+*   **Agentic AI Orchestrator**:
+    *   Authentication via **COIN Auth Server**.
+    *   Determines intent (Informational vs. Directional vs. Executional).
+*   **MCP Server Tools**:
+    *   Exposes functionality of downstream applications as standardized tools.
+    *   Connects to **Backend API Services** for real-time data and actions.
+*   **Enhanced Security**:
+    *   Active token maintenance via **HashiCorp Vault**.
+    *   Syncs with **R2D2** for secure gateway access.
+
+### 📋 Use Case Expansion
+*   **Informational**: "How do I...?" (Solved via RAG)
+*   **Directional**: "Get me the list of..." (Solved via MCP Server Call)
+*   **Executional**: "Generate a report for..." (Solved via MCP Server Call)
+
+---
+
 ## 🚀 Phase 2: Data Fidelity & UX Enhancements (Current)
 **Goal**: Enhance the precision, verifiable accuracy, and usability of the system.
 
@@ -11,7 +37,7 @@ This document tracks the evolution of the application from its initial foundatio
 *   **Multi-Corpus Support**:
     *   **User Mode**: Friendly persona, queries `user` index.
     *   **Developer Mode**: Technical persona, queries `developer` index.
-    *   **UI Toggle**: Real-time switching between modes via the Angular frontend.
+    *   **UI Toggle**: Real-time switching between modes via the web frontend.
 *   **Comprehensive Format Support**:
     *   **PowerPoint (.pptx)**: Added native support for extracting text from slides.
     *   **Page/Slide Precision**: Ingestion now injects `[Page X]` or `[Slide X]` markers into chunks.
@@ -39,7 +65,7 @@ This document tracks the evolution of the application from its initial foundatio
     *   **Generation**: Google Vertex AI (Gemini Pro) integration.
 *   **Application Stack**:
     *   **Backend**: FastAPI (Python 3.10+) with async endpoints.
-    *   **Frontend**: Angular 16+ chat interface.
+    *   **Frontend**: Native Web Standards (HTML5/JS).
     *   **Streaming**: Server-Sent Events (SSE) for real-time response delivery.
 *   **Security & Governance**:
     *   **Intent Router**: Classifies "Greeting" vs "Search" to save API costs.

@@ -61,6 +61,6 @@ These are run manually to manage your data and verify setup.
 
 ---
 
-## 4. Phase 2: Agentic Architecture & MCP
+## 4. Future Roadmap: Agentic Architecture & MCP (Planned)
 - [ ] **Smart Router**: Semantic intent dispatcher.
 - [ ] **MCP Server**: Standardized tool interface.

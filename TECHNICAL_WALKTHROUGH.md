@@ -6,6 +6,8 @@ Welcome to the **GenAI RAG (Retrieval-Augmented Generation) Proof of Concept**. 
 
 ## 🚀 Key Capabilities
 
+*   **Agentic Orchestration (Planned)**: Will introduce a **SmartRouter** component that intelligently directs user prompts to either the RAG pipeline (for knowledge) or MCP Tools (for action).
+*   **MCP Integration (Planned)**: Will implement the **Model Context Protocol (MCP)** to securely connect with downstream API services and external applications.
 *   **Hybrid Intent Engine**: Automatically classifies user queries into **Greetings**, **Closures**, **Off-Topic**, or **RAG Queries** to ensure context-aware responses.
 *   **Multi-Corpus Support**: Seamlessly switches between "User" and "Developer" knowledge bases, applying distinct personas (friendly vs. technical) and querying separate vector indices.
 *   **Adaptive Retrieval Factory**: A multi-tiered search engine that selects the correct index based on the active corpus and falls back gracefully to TF-IDF if needed.
@@ -14,6 +16,18 @@ Welcome to the **GenAI RAG (Retrieval-Augmented Generation) Proof of Concept**. 
 *   **Extractive Fallback Mode**: Can operate in a "Zero-LLM" mode (Local Mode) where it extracts and formats high-relevance source chunks directly from documents without generative synthesis.
 *   **Privacy-First Logging**: Built-in JSON logging with automatic PII and sensitive token redaction (PII/Credential masking).
 *   **Multi-Source Ingestion**: Unified pipeline for parsing and vectorizing `.pdf`, `.docx`, `.pptx`, and `.html` technical documentation.
+
+---
+
+## 📋 Use Case Categorization (Future Vision)
+
+The solution categorizes user queries into three distinct types to determine the execution path:
+
+| Categorization | Description | Example Questions | Solution Approach |
+| :--- | :--- | :--- | :--- |
+| **Informational** | User seeks information from the solution. | "How to create a hierarchy?"<br>"How to get access to the application?" | **RAG** (Retrieval Augmented Generation) |
+| **Directional** | User directs the application to carry out non-actionable tasks. | "Get me the list of hierarchies matching 'EMEA'"<br>"Fetch the audit trail for ProgramId-12345" | **MCP Server Call** (Read-Only) |
+| **Executional** | User requests an actionable task. | "Generate a report of manual adjustments blocked by screening" | **MCP Server Call** (Action/Write) |
 
 ---
 
@@ -26,7 +40,7 @@ The application is built on a modular, asynchronous architecture designed for hi
 ```mermaid
 graph TB
     subgraph "Frontend Layer"
-        UI["Angular Chat Interface (SSE)"]
+        UI["Web Interface (Vanilla JS + SSE)"]
     end
 
     subgraph "Logic Layer (FastAPI)"
@@ -59,6 +73,37 @@ graph TB
     API -->|7. Prompt + Context| GEN
     GEN -->|8. Token Stream| API
     API -->|9. SSE Pump| UI
+```
+
+### 🔮 Future Architecture (Phase 3 - Proposed)
+
+The following schematic outlines the planned evolution towards a Hybrid Agentic Architecture:
+
+```mermaid
+graph TB
+    subgraph "Client Layer"
+        User -->|Prompt| UI["UI Application"]
+    end
+
+    subgraph "Orchestration Layer"
+        UI <-->|JSON| SR["Agentic AI Orchestrator (SmartRouter)"]
+        SR -->|Request Token| COIN["COIN Authentication Server"]
+        COIN -->|Valid Token| SR
+        
+        SR <-->|MCP Protocol| MCPS["MCP Server Tools"]
+        MCPS <-->|API| BAS["Backend API Services"]
+        MCPS <-->|Query| VDB["Vector DB (Static Data)"]
+    end
+
+    subgraph "Gateway Layer"
+        SR <-->|Prompt + Tools| R2D2["R2D2 Gateway"]
+        R2D2 <-->|Sync| VAULT["HashiCorp Vault"]
+    end
+
+    subgraph "Google Cloud Platform"
+        R2D2 <-->|Secure Tunnel| VPC["Citi VPC Cloud Perimeter"]
+        VPC <--> VAI["CITI Managed Vertex AI API"]
+    end
 ```
 
 ---
