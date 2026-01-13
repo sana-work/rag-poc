@@ -21,6 +21,7 @@ class Settings:
     # Vertex Models
     VERTEX_GENERATION_MODEL = os.getenv("VERTEX_GENERATION_MODEL", "gemini-2.0-flash-001")
     VERTEX_EMBEDDING_MODEL = os.getenv("VERTEX_EMBEDDING_MODEL", "text-embedding-005")
+    VERTEX_TEMPERATURE = float(os.getenv("VERTEX_TEMPERATURE", "0.5"))
 
     # R2D2 / Helix Configuration
     R2D2_VERTEX_BASE_URL = os.getenv("R2D2_VERTEX_BASE_URL")

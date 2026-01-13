@@ -51,7 +51,7 @@ async def generate_response_stream(query: str, context_chunks: list, system_inst
         
         # Configure generation config
         config = types.GenerateContentConfig(
-            temperature=0.7,
+            temperature=settings.VERTEX_TEMPERATURE,
             max_output_tokens=1024,
             system_instruction=system_instruction
         )
