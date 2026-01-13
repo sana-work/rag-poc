@@ -17,31 +17,63 @@ We have built an **Intelligent Assistant** that has read, understood, and indexe
 
 ---
 
-## 2. Key Capabilities (Value Proposition)
+## 2. GenAI Crash Course: Key Terminology
+*Speak the language of the future.*
 
-### 🎯 Multi-Persona Support
-*   **Feature**: A real-time toggle between **"User Mode"** (Friendly, Simple) and **"Developer Mode"** (Technical, Precise).
-*   **Why this matters**: It ensures the tool is useful for *everyone*. HR can onboard new hires with simple policy summaries, while Senior Engineers can get complex code snippets for debugging—all from the same knowledge base.
-
-### 📄 Universal Format Support
-*   **Feature**: Native extraction for **PDF**, **PowerPoint** (.pptx), **Word** (.docx), and **HTML**.
-*   **Why this matters**: Vital business logic is often trapped in slide decks. We unlock that data, allowing you to search "Slide 4 of the Strategy Deck" as easily as a text file.
-
-### 🔗 Data Fidelity & Link Preservation
-*   **Feature**: Hyperlinks in original documents are preserved and clickable in the AI's answer.
-*   **Why this matters**: The AI acts as a **bridge**, not a dead end. It answers your question and immediately links you to the deep-dive resource or external portal you need.
-
-### 🛡️ Enterprise-Grade Security
-*   **Feature**: Private deployments with strict citation grounding ("No Hallucinations").
-*   **Why this matters**: **Trust.** We don't guess. If the answer isn't in your documents, the AI will say "I don't know" rather than inventing a fact.
-
-### ⚡ Real-Time Streaming
-*   **Feature**: Responses appear instantly token-by-token (via **Server-Sent Events** technology).
-*   **Why this matters**: Perceived latency is near-zero. Interaction feels conversational and fluid, holding user attention.
+*   **GenAI (Generative AI)**: Artificial Intelligence that can create new content (text, images, code) rather than just analyzing existing data.
+*   **LLM (Large Language Model)**: The "Brain" (e.g., Gemini, GPT-4). A massive AI model trained on the internet that can understand, summarize, and reason about text.
+*   **RAG (Retrieval-Augmented Generation)**: The "Library". The technique of giving the generic LLM access to *your specific private data* (PDFs, PPTs) so it can answer questions about your business.
+*   **Hallucination**: When an AI confidently invents a false fact. We prevent this by **Grounding** it in your data.
+*   **Grounding**: Restricting the AI to answer *only* using the facts provided in your documents. If it's not in the doc, the AI says "I don't know."
+*   **Embeddings / Vectors**: Converting text into list of numbers. This allows the computer to understand that "Queen" is close to "King" in meaning, even if the spellings are different.
+*   **Context Window**: The short-term memory of the AI. It limits how much text (how many pages) you can show the AI at one time.
 
 ---
 
-## 3. Enterprise Architecture: reliability & Scale
+## 3. Mechanics: How It Works
+*From a User's Question to a Verified Answer*
+
+1.  **Ingestion (Reading)**:
+    *   We load your raw files (PDFs, Word Docs, PowerPoints).
+    *   The system splits them into small, manageable "chunks" of text.
+2.  **Indexing (Organizing)**:
+    *   We convert chunks into **Vectors** (mathematical representations of meaning) and store them in a searchable index.
+3.  **Retrieval (The Search)**:
+    *   You ask: *"What is the policy on remote work?"*
+    *   The system scans thousands of chunks and pulls the **Top 5** most relevant paragraphs.
+4.  **Generation (The Synthesis)**:
+    *   We package your **Question** + those **Top 5 Paragraphs** and send them to the LLM (Gemini).
+    *   Instruction to Gemini: *"Answer the user's question using ONLY these paragraphs. Cite your sources."*
+5.  **Delivery**:
+    *   Gemini writes a fluent, human-like answer and links directly to the source document.
+
+---
+
+## 4. Key Capabilities (Value Proposition)
+
+### 🎯 Multi-Persona Support (Prompt Engineering)
+*   **Feature**: Dynamic **System Prompt injection** allowing a real-time toggle between **"User Mode"** (Simplified abstraction) and **"Developer Mode"** (Technical precision).
+*   **Why this matters**: We leverage the LLM's **reasoning capabilities** to adapt. HR gets synthesized summaries, while Engineers get raw code snippets—all from the same **Vector Store**.
+
+### 📄 Universal Format Support (Multi-Modal Ingestion)
+*   **Feature**: Native extraction pipeline for **PDF**, **PowerPoint** (.pptx), **Word** (.docx), and **HTML**.
+*   **Why this matters**: Business logic trapped in unstructured slide decks is vectorized and made retrievable. We unlock **"Dark Data"** so you can query "Slide 4 of the Strategy Deck" directly.
+
+### 🔗 Data Fidelity & Link Preservation
+*   **Feature**: Hyperlinks in original documents are preserved in the **Context Window** and rendered clickable in the generation.
+*   **Why this matters**: The RAG pipeline acts as a **bridge**. It uses **In-Context Learning** to answer questions while preserving pointers to the ground truth.
+
+### 🛡️ Enterprise-Grade Security (Strict Grounding)
+*   **Feature**: Private deployments with strict **Citation Grounding** to eliminate **Hallucinations**.
+*   **Why this matters**: **Trust.** We enforce a retrieval boundary. If the answer isn't in the **Vector Space**, the model halts rather than inventing facts.
+
+### ⚡ Real-Time Streaming (Low Latency)
+*   **Feature**: Responses delivered via **Server-Sent Events (SSE)** for instant **Time-to-First-Token (TTFT)**.
+*   **Why this matters**: **Perceived Latency** is near-zero. The **Inference** feels conversational and liquid, maintaining user engagement.
+
+---
+
+## 5. Enterprise Architecture: reliability & Scale
 *Built for Performance and Security*
 
 ### A. The "Hybrid" Search Engine
@@ -60,35 +92,35 @@ We have built an **Intelligent Assistant** that has read, understood, and indexe
 
 ---
 
-## 4. Live Demo Script (5 Minutes)
+## 6. Live Demo Script (5 Minutes)
 
-### Stop 1: The Safety Check (Establishing Trust)
-*   **👀 Narrator Note**: *Start comfortably. Show that the tool is responsive but polite.*
+### Stop 1: The Safety Check (Intent Recognition)
+*   **👀 Narrator Note**: *Demonstrate the local "Intent Engine" bypassing the LLM.*
 *   **Action**: Type `"Hi, good morning!"`
 *   **Result**: The AI replies politely ("Hello! ready to help...").
-*   **Point**: "It understands social cues, but note how fast it was—we processed this locally to save processing costs."
+*   **Point**: "We use a lightweight classifier to handle chit-chat locally. No GPU inference cost, zero latency."
 
-### Stop 2: The "User" Persona (Unlocking PPTs)
-*   **👀 Narrator Note**: *Emphasize that this data was previously hard to search.*
+### Stop 2: The "User" Persona (Unstructured Retrieval)
+*   **👀 Narrator Note**: *Highlighting the "rag-ification" of slide decks.*
 *   **Action**: Toggle to **"User"**. Ask: `"What information is on Slide 2?"`
-*   **Result**: The AI parses the slide text and cites: `Source : verify_slides (Slide 2)`.
-*   **Point**: "We just queried a PowerPoint slide as if it were a text document. No opening files required."
+*   **Result**: The AI parses the vector chunk and cites: `Source : verify_slides (Slide 2)`.
+*   **Point**: "We just performed semantic search on a PowerPoint shape. The LLM synthesized the bullet points into natural language."
 
-### Stop 3: The "Developer" Persona (Technical Depth)
-*   **👀 Narrator Note**: *Show the contrast in tone. This is for the power users.*
+### Stop 3: The "Developer" Persona (Technical Reasoning)
+*   **👀 Narrator Note**: *Switching the System Prompt to 'Expert Mode'.*
 *   **Action**: Toggle to **"Developer"**. Ask: `"How do I configure the API retry logic?"`
 *   **Result**: The AI provides a detailed response with code blocks, JSON configs, and technical terminology.
-*   **Point**: "Engineers get the exact details needed to unblock their work, without the fluff."
+*   **Point**: "The model context shifted. It's now strictly adhering to code-generation standards for engineers."
 
-### Stop 4: Verifiability (The "Trust Me" Moment)
-*   **👀 Narrator Note**: *Hover over the citations. This is critical for stakeholder buy-in.*
+### Stop 4: Verifiability (Zero-Shot Grounding)
+*   **👀 Narrator Note**: *The "Trust" layer. Proving we aren't hallucinating.*
 *   **Action**: Point to the "Sources" footer. Click a link if available.
 *   **Result**: Show `Source 1 : Document A (Page 5)`.
-*   **Point**: "We trust, but verify. Every claim is backed by a specific page number."
+*   **Point**: "This is 100% grounded. The model is forced to cite the specific page index used for generation."
 
 ---
 
-## 5. What's Next? Strategic Roadmap
+## 7. What's Next? Strategic Roadmap
 
 We have built a passive retrieval engine. The next step is **Active Assistance**.
 
@@ -102,7 +134,7 @@ We have built a passive retrieval engine. The next step is **Active Assistance**
 
 ---
 
-## 6. Q&A: Anticipating Stakeholder Questions
+## 8. Q&A: Anticipating Stakeholder Questions
 
 ### General & Business
 *   **Q: Can this replace our help desk?**
